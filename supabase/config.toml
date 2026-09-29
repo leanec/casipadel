@@ -1,0 +1,12 @@
+# Configuración del proyecto Supabase (CLI).
+# project_id: completalo con el ref real del proyecto al hacer `supabase link`,
+# o dejalo que `supabase init`/`link` lo ajuste la primera vez.
+project_id = "casi-padel"
+
+# Las functions se llaman desde la app pública sin usuario de Supabase:
+# el PIN se verifica adentro, no con el JWT del caller.
+[functions.league-load]
+verify_jwt = false
+
+[functions.league-save]
+verify_jwt = false

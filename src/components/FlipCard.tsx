@@ -18,11 +18,14 @@ export default function FlipCard({
   flipped,
   delay = 0,
   flipDelay = 0,
+  heightClass = 'h-[104px]',
 }: {
   children: ReactNode
   flipped: boolean
   delay?: number
   flipDelay?: number
+  /** la cara frontal es absoluta: la altura la fija esta clase */
+  heightClass?: string
 }) {
   return (
     <motion.div
@@ -35,7 +38,7 @@ export default function FlipCard({
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.6, delay: flipped ? flipDelay : 0, ease: EASE }}
         style={{ transformStyle: 'preserve-3d' }}
-        className="relative h-[104px]"
+        className={`relative ${heightClass}`}
       >
         <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
           <CardBack />

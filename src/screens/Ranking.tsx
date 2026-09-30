@@ -1,12 +1,15 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { playerMap, playerOf } from '../logic/selectors'
 import { rankingRows, seasonStats, type RankingRow } from '../logic/stats'
+import { playerBadges } from '../logic/badges'
 import { eloHistory } from '../logic/elo'
 import Avatar from '../components/Avatar'
 import CountUp from '../components/CountUp'
 import Sheet from '../components/Sheet'
+import ShareImageButton from '../components/ShareImageButton'
 import Sparkline from '../components/Sparkline'
 import SyncChip from '../components/SyncChip'
 import { EASE } from '../components/anim'
@@ -97,12 +100,19 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
   const players = playerMap(league)
   const player = playerOf(players, playerId)
   const stats = seasonStats(league, playerId)
+  const badges = playerBadges(league, playerId)
   const history = eloHistory(league, playerId)
   const actual = Math.round(history[history.length - 1])
   const delta =
     history.length >= 2 ? Math.round(history[history.length - 1] - history[history.length - 2]) : 0
   const dupla =
     stats.bestPartner !== undefined ? playerOf(players, stats.bestPartner.playerId) : undefined
+
+  const vitrina: { emoji: string; text: string }[] = []
+  if (badges.remontadas > 0) vitrina.push({ emoji: '🔄', text: `×${badges.remontadas} Remontada${badges.remontadas > 1 ? 's' : ''}` })
+  if (badges.barridas > 0) vitrina.push({ emoji: '🧹', text: `×${badges.barridas} Barrida${badges.barridas > 1 ? 's' : ''}` })
+  if (badges.bestStreak >= 5) vitrina.push({ emoji: '🌋', text: `Racha ${badges.bestStreak}` })
+  else if (badges.bestStreak >= 3) vitrina.push({ emoji: '🔥', text: `Racha ${badges.bestStreak}` })
 
   return (
     <Sheet title="Perfil" onClose={onClose}>
@@ -140,6 +150,24 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
         ))}
       </div>
 
+      {vitrina.length > 0 ? (
+        <>
+          <p className="label">Vitrina</p>
+          <div className="flex flex-wrap gap-2">
+            {vitrina.map(b => (
+              <span
+                key={b.text}
+                className="glass rounded-full px-3 py-1.5 text-xs font-semibold"
+              >
+                {b.emoji} {b.text}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : stats.played > 0 ? (
+        <p className="mt-4 text-center text-xs text-mute">Sin badges todavía — a la cancha</p>
+      ) : null}
+
       {stats.form.length > 0 && (
         <>
           <p className="label">Forma</p>
@@ -176,6 +204,7 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
 
 export default function Ranking() {
   const { league } = useLeague()
+  const navigate = useNavigate()
   const players = playerMap(league)
   const rows = rankingRows(league)
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
@@ -190,7 +219,20 @@ export default function Ranking() {
             Temporada ELO
           </p>
         </div>
-        <SyncChip />
+        <div className="flex items-center gap-2">
+          {hayTemporada && (
+            <button
+              type="button"
+              onClick={() => navigate('/premios')}
+              aria-label="Premios de temporada"
+              title="Premios de temporada"
+              className="glass rounded-full px-3 py-2 text-base leading-none active:scale-95"
+            >
+              🏅
+            </button>
+          )}
+          <SyncChip />
+        </div>
       </div>
 
       {!hayTemporada ? (
@@ -228,6 +270,10 @@ export default function Ranking() {
           <p className="mt-5 text-center text-[10px] text-mute">
             Tocá a cualquiera para ver su perfil
           </p>
+
+          <div className="mt-6">
+            <ShareImageButton kind="season" label="📤 Compartir ranking" variant="ghost" />
+          </div>
         </>
       )}
 

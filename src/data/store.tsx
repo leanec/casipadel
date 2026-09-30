@@ -11,7 +11,7 @@ import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { leagueRepository } from './local-storage'
 import { freshLeague } from './repository'
 import { championTeamIds } from '../logic/standings'
-import { drawTeams } from '../logic/draw'
+import { drawTeams, pairHistory } from '../logic/draw'
 import { buildFixture } from '../logic/fixture'
 import { uuid } from '../logic/random'
 import { SUPABASE_ANON_KEY, SUPABASE_URL, modoGrupo } from './supabase'
@@ -244,7 +244,7 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
       createSession: (date, playerIds) => {
         const id = uuid()
         update(l => {
-          const teams = drawTeams(playerIds)
+          const teams = drawTeams(playerIds, pairHistory(l.sessions))
           const session: Session = {
             id,
             date,
@@ -283,8 +283,9 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
       redrawTeams: sessionId =>
         update(l =>
           updateSession(l, sessionId, s => {
-            if (s.matches.some(m => m.result !== undefined)) return s
-            const teams = drawTeams(s.playerIds)
+          if (s.matches.some(m => m.result !== undefined)) return s
+          // el re-sorteo no se cuenta a sí mismo en el historial de duplas
+          const teams = drawTeams(s.playerIds, pairHistory(l.sessions, sessionId))
             return { ...s, teams, matches: buildFixture(teams) }
           }),
         ),

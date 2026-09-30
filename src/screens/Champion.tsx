@@ -3,7 +3,9 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { getSession, playerMap, playerOf } from '../logic/selectors'
+import { isRemontada, sweepTeamIds } from '../logic/badges'
 import BigButton from '../components/BigButton'
+import ShareImageButton from '../components/ShareImageButton'
 import StandingsTable from '../components/StandingsTable'
 import TeamCard from '../components/TeamCard'
 import { celebrate } from '../components/confetti'
@@ -31,6 +33,17 @@ export default function Champion() {
   const championNames = champions
     .flatMap(t => t.playerIds.map(pid => playerOf(players, pid).name))
     .join(' & ')
+
+  const sweeps = sweepTeamIds(session)
+    .map(id => session.teams.find(t => t.id === id))
+    .filter(t => t !== undefined)
+  const remontadas = session.matches
+    .filter(isRemontada)
+    .flatMap(m => {
+      const winnerId = m.result?.winner === 'A' ? m.teamAId : m.teamBId
+      const team = session.teams.find(t => t.id === winnerId)
+      return team !== undefined ? [{ round: m.round, team }] : []
+    })
 
   return (
     <div className="flex flex-1 flex-col">
@@ -64,8 +77,29 @@ export default function Champion() {
         </div>
       </section>
 
-      <div className="mt-8">
-        <BigButton onClick={() => navigate('/history')}>Ir al historial</BigButton>
+      {(sweeps.length > 0 || remontadas.length > 0) && (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {sweeps.map(t => (
+            <span key={t.id} className="glass rounded-full px-3 py-1.5 text-xs font-semibold">
+              🧹 Barrida · {t.name}
+            </span>
+          ))}
+          {remontadas.map(r => (
+            <span
+              key={`${r.round}-${r.team.id}`}
+              className="glass rounded-full px-3 py-1.5 text-xs font-semibold"
+            >
+              🔄 Remontada · {r.team.name} (r{r.round})
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-8 flex flex-col gap-3">
+        <ShareImageButton kind="day" sessionId={session.id} label="📤 Compartir resumen" />
+        <BigButton variant="ghost" onClick={() => navigate('/history')}>
+          Ir al historial
+        </BigButton>
       </div>
     </div>
   )

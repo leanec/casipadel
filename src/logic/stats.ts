@@ -28,7 +28,7 @@ export function countTitles(league: League, playerId: string): number {
 }
 
 /** Partidos del jugador con resultado, en orden cronológico (ronda a ronda) */
-function matchesOf(league: League, playerId: string): { won: boolean; partnerId: string }[] {
+export function matchesOf(league: League, playerId: string): { won: boolean; partnerId: string }[] {
   const out: { won: boolean; partnerId: string }[] = []
   for (const session of chronologicalFinishedSessions(league)) {
     const mine = session.teams.find(t => t.playerIds.includes(playerId))

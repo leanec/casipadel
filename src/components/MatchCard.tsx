@@ -1,5 +1,6 @@
 import type { Match, Player, Team } from '../data/types'
 import { scoreLine } from '../logic/results'
+import { isRemontada } from '../logic/badges'
 import { playerOf } from '../logic/selectors'
 import CourtBadge from './CourtBadge'
 import { TEAM_HEX } from './colors'
@@ -24,6 +25,7 @@ export default function MatchCard({
   const result = match.result
   const winnerIsA = result?.winner === 'A'
   const line = scoreLine(result?.sets)
+  const remont = isRemontada(match)
   const nameA = teamA.playerIds.map(id => playerOf(players, id).name).join(' · ')
   const nameB = teamB.playerIds.map(id => playerOf(players, id).name).join(' · ')
 
@@ -43,11 +45,14 @@ export default function MatchCard({
           <CourtBadge court={match.court} />
         </div>
         {result !== undefined ? (
-          line !== null ? (
-            <span className="tnum font-display text-sm text-lime">{line}</span>
-          ) : (
-            <span className="text-xs font-semibold text-lime">✓ Resultado</span>
-          )
+          <span className="flex items-center gap-1.5">
+            {remont && <span aria-label="Remontada">🔄</span>}
+            {line !== null ? (
+              <span className="tnum font-display text-sm text-lime">{line}</span>
+            ) : (
+              <span className="text-xs font-semibold text-lime">✓ Resultado</span>
+            )}
+          </span>
         ) : (
           <span className="text-xs text-mute">Ingresar →</span>
         )}

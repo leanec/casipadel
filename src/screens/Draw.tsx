@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { getSession, playerMap } from '../logic/selectors'
 import { formatLongDate } from '../logic/dates'
+import { minRepeats, pairHistory, pairKey } from '../logic/draw'
 import { randomTeamName } from '../logic/names'
 import { shuffle } from '../logic/random'
 import Avatar from '../components/Avatar'
@@ -55,6 +56,14 @@ export default function Draw() {
   }, [phase, runId])
 
   if (session === undefined) return null
+
+  // memoria del sorteo: historial de duplas sin contar esta jornada
+  const history = pairHistory(league.sessions, session.id)
+  const pairNoteFor = (team: { playerIds: [string, string] }) => {
+    const n = (history.get(pairKey(team.playerIds[0], team.playerIds[1]))?.count ?? 0) + 1
+    return n === 1 ? 'Dupla inédita ✨' : `Juntos por ${n}ª vez`
+  }
+  const quedanIneditas = history.size === 0 || minRepeats(session.playerIds, history) === 0
 
   const redraw = () => {
     actions.redrawTeams(session.id)
@@ -114,14 +123,23 @@ export default function Draw() {
               delay={i * 0.14}
               flipDelay={0.1 + i * 0.12}
               flipped={phase === 'done'}
+              heightClass="h-[128px]"
             >
               <TeamCard
                 team={team}
                 players={players}
+                pairNote={pairNoteFor(team)}
                 onRename={phase === 'done' ? () => rename(team.id, team.name) : undefined}
               />
             </FlipCard>
           ))}
+          {phase === 'done' && (
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.15em] text-mute">
+              {quedanIneditas
+                ? '🎲 Sorteo con memoria — evita repetir duplas'
+                : 'Todas las duplas ya jugaron — se repiten las más viejas'}
+            </p>
+          )}
         </div>
       )}
 

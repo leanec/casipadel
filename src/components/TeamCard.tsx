@@ -8,11 +8,14 @@ export default function TeamCard({
   players,
   onRename,
   glow = false,
+  pairNote,
 }: {
   team: Team
   players: Map<string, Player>
   onRename?: () => void
   glow?: boolean
+  /** Etiqueta de historial de la dupla (solo en el sorteo): "Dupla inédita ✨" */
+  pairNote?: string
 }) {
   const hex = TEAM_HEX[team.color]
   const pair = team.playerIds.map(id => playerOf(players, id))
@@ -46,6 +49,11 @@ export default function TeamCard({
           </div>
         ))}
       </div>
+      {pairNote !== undefined && (
+        <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-mute">
+          {pairNote}
+        </p>
+      )}
     </div>
   )
 }

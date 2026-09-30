@@ -121,4 +121,51 @@ describe('mergeSessions / mergeLeagues', () => {
     expect(merged.players.map(p => p.id)).toEqual(['a', 'b'])
     expect(merged.sessions.map(s => s.id)).toEqual(['s2', 's1'])
   })
+
+  it('una jornada eliminada (tombstone) no revive desde el otro lado', () => {
+    const local: League = {
+      version: 1,
+      players: [player('a')],
+      sessions: [],
+      deletedSessionIds: ['s1'],
+    }
+    const remote: League = {
+      version: 1,
+      players: [player('a')],
+      sessions: [session('s1', '2026-09-14', [match('m1', 'T1', 'T2', 'A')])],
+    }
+    const merged = mergeLeagues(local, remote)
+    expect(merged.sessions.map(s => s.id)).toEqual([])
+    expect(merged.deletedSessionIds).toEqual(['s1'])
+  })
+
+  it('los tombstones se unionan de ambos lados (jugadores y jornadas)', () => {
+    const local: League = {
+      version: 1,
+      players: [player('a')],
+      sessions: [session('s2', '2026-09-21', [])],
+      deletedSessionIds: ['s1'],
+      deletedPlayerIds: ['z'],
+    }
+    const remote: League = {
+      version: 1,
+      players: [player('a'), player('z'), player('y')],
+      sessions: [session('s1', '2026-09-14', [])],
+      deletedPlayerIds: ['y'],
+    }
+    const merged = mergeLeagues(local, remote)
+    expect(merged.deletedSessionIds).toEqual(['s1'])
+    expect(merged.deletedPlayerIds).toEqual(['y', 'z'])
+    // y quedan filtrados de las listas
+    expect(merged.players.map(p => p.id)).toEqual(['a'])
+    expect(merged.sessions.map(s => s.id)).toEqual(['s2'])
+  })
+
+  it('sin eliminados no aparecen campos de tombstones (formato estable)', () => {
+    const local: League = { version: 1, players: [player('a')], sessions: [] }
+    const remote: League = { version: 1, players: [player('a')], sessions: [] }
+    const merged = mergeLeagues(local, remote)
+    expect(merged.deletedSessionIds).toBeUndefined()
+    expect(merged.deletedPlayerIds).toBeUndefined()
+  })
 })

@@ -184,24 +184,44 @@ export default function ResultSheet({
               Gana {setsWinner === 'A' ? teamA.name : teamB.name}
             </p>
           )}
-          {tbAvailable && (
-            <button
-              type="button"
-              onClick={() => setSets(prev => [...prev, { a: 0, b: 0 }])}
-              className="mx-auto text-xs text-lime underline"
-            >
-              + Agregar súper tiebreak
-            </button>
-          )}
-          {sets.length === 3 && (
-            <button
-              type="button"
-              onClick={() => setSets(prev => prev.slice(0, 2))}
-              className="mx-auto text-xs text-mute underline"
-            >
-              Quitar tiebreak
-            </button>
-          )}
+          <div className="flex items-center justify-center gap-5">
+            {sets.length === 1 && (
+              <button
+                type="button"
+                onClick={() => setSets(prev => [...prev, { a: 0, b: 0 }])}
+                className="text-xs text-lime underline"
+              >
+                + Agregar set 2
+              </button>
+            )}
+            {sets.length === 2 && (
+              <button
+                type="button"
+                onClick={() => setSets(prev => prev.slice(0, 1))}
+                className="text-xs text-mute underline"
+              >
+                Quitar set 2
+              </button>
+            )}
+            {tbAvailable && (
+              <button
+                type="button"
+                onClick={() => setSets(prev => [...prev, { a: 0, b: 0 }])}
+                className="text-xs text-lime underline"
+              >
+                + Súper tiebreak
+              </button>
+            )}
+            {sets.length === 3 && (
+              <button
+                type="button"
+                onClick={() => setSets(prev => prev.slice(0, 2))}
+                className="text-xs text-mute underline"
+              >
+                Quitar tiebreak
+              </button>
+            )}
+          </div>
           <button
         type="button"
         onClick={saveSets}

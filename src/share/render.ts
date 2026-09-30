@@ -1,4 +1,4 @@
-import type { SeasonSummaryModel, SessionSummaryModel } from '../logic/summary'
+import type { DayTableModel, SeasonSummaryModel, SessionSummaryModel } from '../logic/summary'
 
 /**
  * Motor de dibujo de las imágenes compartibles (canvas 2D puro, sin dependencias).
@@ -266,6 +266,110 @@ export async function drawSessionSummary(
       x += widths[i] + gapX
     })
   }
+
+  footer(ctx)
+}
+
+export async function drawDayTable(
+  canvas: HTMLCanvasElement,
+  model: DayTableModel,
+): Promise<void> {
+  await ensureFonts()
+  const ctx = setup(canvas)
+
+  wordmark(ctx, 110)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.font = `800 26px ${FONT_BODY}`
+  tracking(ctx, 5)
+  ctx.fillStyle = MUTE
+  ctx.fillText(model.dateLabel.toUpperCase(), 540, 168)
+  tracking(ctx, 0)
+
+  ctx.font = `64px ${FONT_DISPLAY}`
+  ctx.fillStyle = INK
+  ctx.fillText('TABLA DEL DÍA', 540, 252)
+
+  // chip de estado: en curso (lima) o jornada final
+  ctx.font = `800 24px ${FONT_BODY}`
+  tracking(ctx, 3)
+  const chipW = ctx.measureText(model.statusLabel).width + 76
+  const chipY = 296
+  glassCard(ctx, 540 - chipW / 2, chipY, chipW, 54, 27)
+  if (model.live) {
+    rr(ctx, 540 - chipW / 2, chipY, chipW, 54, 27)
+    ctx.strokeStyle = 'rgba(198, 244, 50, 0.45)'
+    ctx.lineWidth = 3
+    ctx.stroke()
+  }
+  ctx.fillStyle = model.live ? LIME : MUTE
+  ctx.textBaseline = 'middle'
+  ctx.fillText(model.statusLabel, 540, chipY + 28)
+  tracking(ctx, 0)
+
+  // encabezados de columnas
+  const X = { pj: 700, pg: 800, sets: 895, dj: 975 }
+  ctx.textBaseline = 'alphabetic'
+  ctx.font = `800 22px ${FONT_BODY}`
+  tracking(ctx, 2)
+  ctx.fillStyle = MUTE
+  ctx.textAlign = 'center'
+  ctx.fillText('#', 120, 430)
+  ctx.textAlign = 'left'
+  ctx.fillText('PAREJA', 170, 430)
+  ctx.textAlign = 'right'
+  ctx.fillText('PJ', X.pj, 430)
+  ctx.fillText('PG', X.pg, 430)
+  ctx.fillText('SETS', X.sets, 430)
+  ctx.fillText('ΔJ', X.dj, 430)
+  tracking(ctx, 0)
+
+  const top = 460
+  const rowH = 150
+  const gap = 20
+  model.rows.forEach((row, i) => {
+    const y = top + i * (rowH + gap)
+    const primero = row.pos === 1
+    glassCard(ctx, 60, y, 960, rowH, 28)
+    if (primero) {
+      rr(ctx, 60, y, 960, rowH, 28)
+      ctx.strokeStyle = 'rgba(198, 244, 50, 0.45)'
+      ctx.lineWidth = 3
+      ctx.stroke()
+    }
+    ctx.textBaseline = 'middle'
+
+    ctx.textAlign = 'center'
+    ctx.font = `46px ${FONT_DISPLAY}`
+    ctx.fillStyle = primero ? LIME : MUTE
+    ctx.fillText(String(row.pos), 120, y + rowH / 2)
+
+    ctx.textAlign = 'left'
+    ctx.font = `600 34px ${FONT_BODY}`
+    ctx.fillStyle = INK
+    ctx.fillText(ellipsis(ctx, row.teamName.toUpperCase(), 360), 170, y + rowH / 2 - 18)
+    ctx.font = `600 24px ${FONT_BODY}`
+    ctx.fillStyle = MUTE
+    ctx.fillText(ellipsis(ctx, row.playerNames, 360), 170, y + rowH / 2 + 26)
+
+    if (row.badges !== '') {
+      ctx.font = '34px sans-serif'
+      ctx.fillText(row.badges, 565, y + rowH / 2)
+    }
+
+    ctx.textAlign = 'right'
+    ctx.font = `600 28px ${FONT_BODY}`
+    ctx.fillStyle = MUTE
+    ctx.fillText(String(row.played), X.pj, y + rowH / 2)
+    ctx.font = `44px ${FONT_DISPLAY}`
+    ctx.fillStyle = primero ? LIME : INK
+    ctx.fillText(String(row.won), X.pg, y + rowH / 2)
+    ctx.font = `600 28px ${FONT_BODY}`
+    ctx.fillStyle = MUTE
+    ctx.fillText(row.sets, X.sets, y + rowH / 2)
+    ctx.fillText(`${row.diff > 0 ? '+' : ''}${row.diff}`, X.dj, y + rowH / 2)
+  })
 
   footer(ctx)
 }

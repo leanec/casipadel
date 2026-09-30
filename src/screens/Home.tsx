@@ -75,7 +75,7 @@ export default function Home() {
           </motion.span>
           <h2 className="font-display mt-4 text-2xl uppercase">¡Armá el grupo!</h2>
           <p className="mt-2 text-sm text-mute">
-            Cargá los 10 jugadores del lunes y arrancá con el primer sorteo de parejas.
+            Cargá los jugadores del grupo y arrancá con el primer sorteo de parejas.
           </p>
           <div className="mt-6">
             <BigButton onClick={() => navigate('/players')}>Cargar jugadores</BigButton>

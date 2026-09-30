@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { League, Match, Player, Session, Team } from '../data/types'
-import { buildSeasonSummary, buildSessionSummary } from './summary'
+import { buildDayTable, buildSeasonSummary, buildSessionSummary } from './summary'
 
 function player(id: string): Player {
   return { id, name: id.toUpperCase(), emoji: '🎾', hue: 100, createdAt: '' }
@@ -90,6 +90,49 @@ describe('buildSessionSummary', () => {
     const m = buildSessionSummary(league([s]), s)
     expect(m.championNames).toBe('')
     expect(m.rows.every(r => r.won === 0 && r.lost === 0)).toBe(true)
+  })
+})
+
+describe('buildDayTable', () => {
+  it('filas ordenadas con sets, diferencia y estado final', () => {
+    const s = fullSession('s1', '2026-09-14')
+    s.matches[0] = match('s1-1', 'A', 'B', 1, 'A', [
+      { a: 6, b: 4 },
+      { a: 6, b: 2 },
+    ])
+    const l = league([s])
+    const m = buildDayTable(l, l.sessions[0])
+    expect(m.live).toBe(false)
+    expect(m.statusLabel).toBe('JORNADA FINAL')
+    expect(m.rows).toHaveLength(4)
+    expect(m.rows[0]).toMatchObject({
+      pos: 1,
+      teamName: 'Equipo A',
+      playerNames: 'PA & PB',
+      played: 3,
+      won: 3,
+      lost: 0,
+      sets: '2-0',
+      diff: 6,
+      badges: '🧹',
+    })
+    expect(m.rows[3]).toMatchObject({ pos: 4, won: 0, lost: 3, diff: 0 })
+  })
+
+  it('jornada en curso: etiqueta con avance y sin badges de barrida', () => {
+    const s: Session = {
+      ...fullSession('s1', '2026-09-21'),
+      status: 'live',
+      championTeamIds: undefined,
+      matches: fullSession('s1', '2026-09-21').matches.map(m => ({ ...m, result: undefined })),
+    }
+    s.matches[0].result = { winner: 'A', sets: [{ a: 6, b: 3 }] }
+    const l = league([s])
+    const m = buildDayTable(l, l.sessions[0])
+    expect(m.live).toBe(true)
+    expect(m.statusLabel).toBe('EN CURSO · 1/6')
+    expect(m.rows[0]).toMatchObject({ played: 1, won: 1, sets: '1-0', diff: 3 })
+    expect(m.rows.every(r => r.badges === '')).toBe(true)
   })
 })
 

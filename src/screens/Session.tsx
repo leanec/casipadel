@@ -7,6 +7,7 @@ import { formatShortDate } from '../logic/dates'
 import BigButton from '../components/BigButton'
 import MatchCard from '../components/MatchCard'
 import ResultSheet from '../components/ResultSheet'
+import ShareImageButton from '../components/ShareImageButton'
 import StandingsTable from '../components/StandingsTable'
 
 export default function Session() {
@@ -17,6 +18,7 @@ export default function Session() {
   const players = useMemo(() => playerMap(league), [league])
   const [openMatchId, setOpenMatchId] = useState<string | null>(null)
   const [confirmReopen, setConfirmReopen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (session === undefined) return <Navigate to="/" replace />
 
@@ -101,7 +103,15 @@ export default function Session() {
       ))}
 
       <section className="mt-8">
-        <h3 className="section-title">Tabla del día</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="section-title">Tabla del día</h3>
+          <ShareImageButton
+            kind="table"
+            sessionId={session.id}
+            label="Compartir tabla del día"
+            compact
+          />
+        </div>
         <div className="mt-2">
           <StandingsTable session={session} players={players} />
         </div>
@@ -155,6 +165,39 @@ export default function Session() {
             </button>
           )}
         </div>
+      )}
+
+      {confirmDelete ? (
+        <div className="mt-8">
+          <p className="text-center text-xs text-mute">
+            ¿Eliminar la jornada del {formatShortDate(session.date)}? Se pierden sus
+            resultados y no se puede deshacer.
+          </p>
+          <div className="mt-3 flex gap-3">
+            <BigButton variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancelar
+            </BigButton>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmDelete(false)
+                actions.deleteSession(session.id)
+                navigate('/history')
+              }}
+              className="font-display flex-1 rounded-full border border-danger/40 text-sm uppercase tracking-wide text-danger"
+            >
+              Sí, eliminar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          className="mt-8 w-full py-2 text-xs font-semibold text-danger/60"
+        >
+          Eliminar jornada
+        </button>
       )}
 
       <AnimatePresence>

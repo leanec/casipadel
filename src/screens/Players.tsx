@@ -21,7 +21,7 @@ export default function Players() {
         <EmptyState
           emoji="👥"
           title="Acá vive el grupo"
-          text="Cargá los 10 jugadores del lunes. Solo nombre, emoji y color."
+          text="Cargá los jugadores del lunes. Solo nombre, emoji y color."
         />
       )}
 

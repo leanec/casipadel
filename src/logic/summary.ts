@@ -72,6 +72,58 @@ export function buildSessionSummary(league: League, session: Session): SessionSu
   }
 }
 
+export interface DayTableRow {
+  pos: number
+  teamName: string
+  playerNames: string
+  played: number
+  won: number
+  lost: number
+  /** "4-2" en sets ganados-perdidos */
+  sets: string
+  /** Diferencia de juegos */
+  diff: number
+  /** emoji de badge de la pareja (🧹) */
+  badges: string
+}
+
+export interface DayTableModel {
+  dateLabel: string
+  live: boolean
+  /** "EN CURSO · 3/6" o "JORNADA FINAL" */
+  statusLabel: string
+  rows: DayTableRow[]
+}
+
+export function buildDayTable(league: League, session: Session): DayTableModel {
+  const players = playerMap(league)
+  const sweeps = new Set(sweepTeamIds(session))
+  const played = session.matches.filter(m => m.result !== undefined).length
+  return {
+    dateLabel: formatLongDate(session.date),
+    live: session.status === 'live',
+    statusLabel:
+      session.status === 'live'
+        ? `EN CURSO · ${played}/${session.matches.length}`
+        : 'JORNADA FINAL',
+    rows: computeStandings(session.teams, session.matches).map((standing, i) => {
+      const team = session.teams.find(t => t.id === standing.teamId)
+      return {
+        pos: i + 1,
+        teamName: team?.name ?? '?',
+        playerNames:
+          team?.playerIds.map(id => players.get(id)?.name ?? '?').join(' & ') ?? '?',
+        played: standing.played,
+        won: standing.won,
+        lost: standing.lost,
+        sets: `${standing.setsWon}-${standing.setsLost}`,
+        diff: standing.gamesWon - standing.gamesLost,
+        badges: team !== undefined && sweeps.has(team.id) ? '🧹' : '',
+      }
+    }),
+  }
+}
+
 export interface SeasonSummaryRow {
   pos: number
   name: string

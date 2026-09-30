@@ -52,6 +52,18 @@ describe('validateMatchSets', () => {
     ).toBeNull()
   })
 
+  it('acepta partido corto de 1 solo set', () => {
+    expect(validateMatchSets([{ a: 6, b: 4 }])).toBeNull()
+    expect(validateMatchSets([{ a: 3, b: 6 }])).toBeNull()
+    expect(winnerFromSets([{ a: 6, b: 4 }])).toBe('A')
+    expect(winnerFromSets([{ a: 3, b: 6 }])).toBe('B')
+  })
+
+  it('rechaza 1 set inválido', () => {
+    expect(validateMatchSets([{ a: 6, b: 6 }])).not.toBeNull()
+    expect(validateMatchSets([{ a: 5, b: 3 }])).not.toBeNull()
+  })
+
   it('rechaza 1-1 sin tiebreak', () => {
     expect(
       validateMatchSets([

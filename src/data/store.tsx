@@ -47,6 +47,8 @@ interface LeagueActions {
   finishSession(sessionId: string): void
   /** Corrección: una jornada cerrada vuelve a estar en curso (resultados editables) */
   reopenSession(sessionId: string): void
+  /** Borra la jornada y deja el tombstone para que el sync no la reviva */
+  deleteSession(sessionId: string): void
 }
 
 export type UnlockResult = 'ok' | 'empty' | 'pin' | 'rate' | 'sin-liga' | 'red'
@@ -240,7 +242,12 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
           ...l,
           players: l.players.map(p => (p.id === id ? { ...p, ...patch } : p)),
         })),
-      deletePlayer: id => update(l => ({ ...l, players: l.players.filter(p => p.id !== id) })),
+      deletePlayer: id =>
+        update(l => ({
+          ...l,
+          players: l.players.filter(p => p.id !== id),
+          deletedPlayerIds: [...(l.deletedPlayerIds ?? []), id].sort(),
+        })),
       createSession: (date, playerIds) => {
         const id = uuid()
         update(l => {
@@ -307,6 +314,12 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
             return { ...s, status: 'live', championTeamIds: undefined }
           }),
         ),
+      deleteSession: sessionId =>
+        update(l => ({
+          ...l,
+          sessions: l.sessions.filter(s => s.id !== sessionId),
+          deletedSessionIds: [...(l.deletedSessionIds ?? []), sessionId].sort(),
+        })),
     }
   }, [])
 

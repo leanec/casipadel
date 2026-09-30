@@ -27,9 +27,10 @@ export function winnerFromSets(sets: SetScore[]): 'A' | 'B' | null {
   return a > b ? 'A' : b > a ? 'B' : null
 }
 
-/** Valida la carga completa de sets de un partido (2 sets o 2 + super TB) */
+/** Valida la carga completa de sets de un partido (1 set corto, 2 sets o 2 + súper TB) */
 export function validateMatchSets(sets: SetScore[]): string | null {
-  if (sets.length !== 2 && sets.length !== 3) return 'Cargá los 2 sets (y el tiebreak si hace falta)'
+  if (sets.length === 0) return 'Cargá al menos un set'
+  if (sets.length > 3) return 'Un partido tiene a lo sumo 3 sets'
   for (let i = 0; i < sets.length; i++) {
     const err = validateSetScore(sets[i], i === 2)
     if (err) return `Set ${i + 1}: ${err}`

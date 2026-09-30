@@ -24,7 +24,7 @@ export interface SetScore {
 
 export interface MatchResult {
   winner: 'A' | 'B'
-  /** Sets cargados en modo detallado; el 3º es super tiebreak a 10 */
+  /** Sets cargados en modo detallado: 1 set corto, 2 sets o 2 + súper TB a 10 */
   sets?: SetScore[]
 }
 
@@ -55,4 +55,8 @@ export interface League {
   version: 1
   players: Player[]
   sessions: Session[]
+  /** Tombstones de eliminados: viajan con la liga para que la fusión con otro
+   *  dispositivo no los reviva (las jornadas/jugadores se quitan de las listas) */
+  deletedPlayerIds?: string[]
+  deletedSessionIds?: string[]
 }

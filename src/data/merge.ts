@@ -8,6 +8,8 @@ import type { League, Player, Session } from './types'
  *  - misma jornada: base = la copia con más resultados (empate ⇒ servidor);
  *    si alguna está cerrada gana esa para estado/campeón; partido a partido,
  *    resultado cargado le gana a vacío y el del servidor gana conflictos
+ *  - eliminados: los tombstones se unionan y ganan a la unión (borrar en un
+ *    dispositivo borra en todos)
  */
 
 const progress = (s: Session) => s.matches.filter(m => m.result !== undefined).length
@@ -65,9 +67,22 @@ export function mergeSessions(local: Session[], remote: Session[]): Session[] {
 }
 
 export function mergeLeagues(local: League, remote: League): League {
+  // unión de tombstones (ordenada ⇒ JSON estable para comparar snapshots)
+  const deletedPlayerIds = unionDeleted(local.deletedPlayerIds, remote.deletedPlayerIds)
+  const deletedSessionIds = unionDeleted(local.deletedSessionIds, remote.deletedSessionIds)
   return {
     version: 1,
-    players: mergePlayers(local.players, remote.players),
-    sessions: mergeSessions(local.sessions, remote.sessions),
+    players: mergePlayers(local.players, remote.players).filter(
+      p => !deletedPlayerIds.includes(p.id),
+    ),
+    sessions: mergeSessions(local.sessions, remote.sessions).filter(
+      s => !deletedSessionIds.includes(s.id),
+    ),
+    ...(deletedPlayerIds.length > 0 ? { deletedPlayerIds } : {}),
+    ...(deletedSessionIds.length > 0 ? { deletedSessionIds } : {}),
   }
+}
+
+function unionDeleted(local: string[] | undefined, remote: string[] | undefined): string[] {
+  return [...new Set([...(local ?? []), ...(remote ?? [])])].sort()
 }

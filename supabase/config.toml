@@ -1,7 +1,7 @@
 # Configuración del proyecto Supabase (CLI).
-# project_id: completalo con el ref real del proyecto al hacer `supabase link`,
-# o dejalo que `supabase init`/`link` lo ajuste la primera vez.
-project_id = "casi-padel"
+# Nota: el proyecto real se configuró por dashboard (SQL Editor + Edge Functions);
+# este archivo queda listo por si se adopta la CLI más adelante.
+project_id = "wmrzlqpkttmwqehtfwxm"
 
 # Las functions se llaman desde la app pública sin usuario de Supabase:
 # el PIN se verifica adentro, no con el JWT del caller.

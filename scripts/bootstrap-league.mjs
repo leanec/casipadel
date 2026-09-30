@@ -48,7 +48,8 @@ if (!/^\d{4,6}$/.test(pin)) {
 }
 
 const salt = randomBytes(16).toString('hex')
-const hash = pbkdf2Sync(pin, salt, ITERACIONES, 32, 'sha256').toString('hex')
+// OJO: el salt se pasa DECODIFICADO de hex — así lo verifica la edge function
+const hash = pbkdf2Sync(pin, Buffer.from(salt, 'hex'), ITERACIONES, 32, 'sha256').toString('hex')
 const pinHash = `pbkdf2$${ITERACIONES}$${salt}$${hash}`
 const headers = {
   apikey: serviceKey,

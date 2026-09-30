@@ -179,13 +179,17 @@ export class SyncEngine {
     }
   }
 
+  /**
+   * Pull: silencioso de arranque — es una actualización de fondo (foco,
+   * realtime, reconexión) y anunciarla hacía parpadear el chip. Solo cambia el
+   * estado si trajo cambios (⇒ push), cerró bien o falló la red.
+   */
   async pull(): Promise<void> {
     const pin = storedPin()
     if (this.stopped || pin === null) return
-    this.opts.onStatus('syncing')
     try {
       const snap = await fetchRemote(pin)
-      // aplica si el servidor avanzó O si el contenido difiere (cambios locales
+      // aplica si el servidor avanzó o si el contenido difiere (cambios locales
       // varados sin sincronizar: la fusión los devuelve al grupo)
       const sameRevision = snap.revision === this.revision
       const sameContent = JSON.stringify(snap.data) === JSON.stringify(this.opts.getLeague())

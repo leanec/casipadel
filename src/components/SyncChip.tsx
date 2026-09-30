@@ -18,12 +18,12 @@ export default function SyncChip() {
   return (
     <span
       title={estado.texto}
-      className={`tnum inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${estado.clase}`}
+      className={`tnum inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${estado.clase}`}
     >
       {group.status === 'syncing' ? (
-        <span className="animate-pulse">{estado.icono}</span>
+        <span className="animate-pulse text-[9px] leading-none">{estado.icono}</span>
       ) : (
-        <span className="text-xs leading-none">{estado.icono}</span>
+        <span className="text-[9px] leading-none">{estado.icono}</span>
       )}
       {estado.texto}
     </span>

@@ -189,16 +189,29 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
         .subscribe()
     })
 
-    const onWake = () => {
+    let ultimaPull = 0
+    // foco: pull de fondo a lo sumo cada 15 s (el realtime cubre el resto)
+    const onFocus = () => {
+      if (engine.isDirty()) {
+        void engine.pushNow()
+        return
+      }
+      if (Date.now() - ultimaPull > 15_000) {
+        ultimaPull = Date.now()
+        void engine.pull()
+      }
+    }
+    // reconexión: refresco inmediato
+    const onOnline = () => {
       void (engine.isDirty() ? engine.pushNow() : engine.pull())
     }
-    window.addEventListener('focus', onWake)
-    window.addEventListener('online', onWake)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('online', onOnline)
     return () => {
       cancelado = true
       if (client !== null && channel !== null) void client.removeChannel(channel)
-      window.removeEventListener('focus', onWake)
-      window.removeEventListener('online', onWake)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('online', onOnline)
     }
   }, [locked])
 

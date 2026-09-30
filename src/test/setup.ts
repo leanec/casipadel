@@ -1,4 +1,10 @@
 import '@testing-library/jest-dom/vitest'
+import { vi } from 'vitest'
+
+// tests herméticos: aunque exista un .env local con Supabase, la app under test
+// corre en modo local (Fase 1) y nunca toca la red
+vi.stubEnv('VITE_SUPABASE_URL', '')
+vi.stubEnv('VITE_SUPABASE_ANON_KEY', '')
 
 // Node nuevo expone un localStorage global sin backend que pisa el de jsdom y
 // revienta en setItem/clear. Si está roto, lo reemplazamos por uno en memoria.

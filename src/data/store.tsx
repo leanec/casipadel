@@ -26,6 +26,7 @@ import {
 import { mergeLeagues } from './merge'
 import { fetchRemote, SyncEngine, type RemoteSnapshot, type SyncStatus } from './sync'
 import PinGate from '../screens/PinGate'
+import logoHorizontal from '../../branding/logo-horizontal-transparent.svg'
 import type { League, MatchResult, Session } from './types'
 
 export interface PlayerInput {
@@ -234,13 +235,20 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
           ...l,
           players: [
             ...l.players,
-            { id: uuid(), createdAt: new Date().toISOString(), ...input },
+            {
+              id: uuid(),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              ...input,
+            },
           ],
         })),
       updatePlayer: (id, patch) =>
         update(l => ({
           ...l,
-          players: l.players.map(p => (p.id === id ? { ...p, ...patch } : p)),
+          players: l.players.map(p =>
+            p.id === id ? { ...p, ...patch, updatedAt: new Date().toISOString() } : p,
+          ),
         })),
       deletePlayer: id =>
         update(l => ({
@@ -393,12 +401,10 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
   )
 
   if (league === null) {
-    // pantalla de carga: wordmark latiendo
+    // pantalla de carga: logo latiendo
     return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <p className="font-display animate-pulse -skew-x-6 text-4xl uppercase">
-          <span className="text-ink">Casi</span> <span className="text-lime">Pádel</span>
-        </p>
+      <div className="flex min-h-dvh items-center justify-center px-10">
+        <img src={logoHorizontal} alt="Casi Pádel" className="w-64 max-w-full animate-pulse" />
       </div>
     )
   }

@@ -3,7 +3,8 @@ import type { League, Player, Session } from './types'
 /**
  * Fusión local ↔ servidor para cuando dos dispositivos cargaron cosas distintas
  * (el lunes real). Reglas del PLAN-FASE-2 §5:
- *  - players: unión por id; conflicto ⇒ servidor
+ *  - players: unión por id; conflicto ⇒ la copia con `updatedAt` más nuevo
+ *    (si una sola lo tiene, esa; sin marca en ninguna ⇒ servidor)
  *  - sessions: unión por id (nunca se pierde una jornada)
  *  - misma jornada: base = la copia con más resultados (empate ⇒ servidor);
  *    si alguna está cerrada gana esa para estado/campeón; partido a partido,
@@ -14,9 +15,19 @@ import type { League, Player, Session } from './types'
 
 const progress = (s: Session) => s.matches.filter(m => m.result !== undefined).length
 
+/** Jugador en conflicto entre lados: gana la copia editada más reciente */
+function mergePlayer(local: Player, remote: Player): Player {
+  if (local.updatedAt === undefined) return remote
+  if (remote.updatedAt === undefined) return local
+  return local.updatedAt > remote.updatedAt ? local : remote
+}
+
 export function mergePlayers(local: Player[], remote: Player[]): Player[] {
   const remoteById = new Map(remote.map(p => [p.id, p]))
-  const merged = local.map(p => remoteById.get(p.id) ?? p)
+  const merged = local.map(p => {
+    const r = remoteById.get(p.id)
+    return r === undefined ? p : mergePlayer(p, r)
+  })
   const localIds = new Set(local.map(p => p.id))
   remote.forEach(p => {
     if (!localIds.has(p.id)) merged.push(p)

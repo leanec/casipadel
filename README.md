@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="branding/banner-readme.png" alt="Casi Pádel — liga de los lunes, casi profesionales" width="100%">
+</p>
+
 # Casi Pádel 🎾
 
 **La liga de los lunes, en el bolsillo.** App web mobile-first para gestionar un grupo de pádel: sorteo animado de parejas, fixture automático, carga de resultados en vivo, tabla del día, ranking ELO de temporada e imágenes listas para compartir en el grupo de WhatsApp.
@@ -110,7 +114,6 @@ El primer dispositivo que entre con el PIN puede **subir su liga local** (migrac
 
 - Los tests no requieren red ni credenciales: sin las variables `VITE_SUPABASE_*` la app corre en modo local.
 - Rutas profundas: el `BrowserRouter` usa `basename={import.meta.env.BASE_URL}` (`/casipadel/`).
-- Planeación y decisiones por fase en [`../PLAN.md`](../PLAN.md), [`../PLAN-FASE-1.md`](../PLAN-FASE-1.md), [`../PLAN-FASE-2.md`](../PLAN-FASE-2.md) y [`../PLAN-FASE-3.md`](../PLAN-FASE-3.md).
 
 ---
 

@@ -18,9 +18,9 @@ import type { Player } from '../data/types'
 const MEDALLAS = ['🥇', '🥈', '🥉']
 
 function Movimiento({ delta }: { delta: number }) {
-  if (delta === 0) return <span className="text-[10px] text-mute">·</span>
+  if (delta === 0) return <span className="text-xs text-mute">·</span>
   return (
-    <span className={`text-[10px] font-bold ${delta > 0 ? 'text-lime' : 'text-danger'}`}>
+    <span className={`text-xs font-bold ${delta > 0 ? 'text-lime' : 'text-danger'}`}>
       {delta > 0 ? `▲${delta}` : `▼${-delta}`}
     </span>
   )
@@ -55,7 +55,12 @@ function Podio({ rows, players, onOpen }: { rows: RankingRow[]; players: Map<str
             <p className="tnum font-display mt-0.5 text-lg leading-none">
               <CountUp value={row.elo} />
             </p>
-            {row.streak >= 2 && <p className="mt-1 text-[10px]">🔥{row.streak}</p>}
+            {(row.streak >= 2 || row.movement !== 0) && (
+              <p className="mt-1 flex items-center justify-center gap-1.5 text-xs">
+                {row.streak >= 2 && <span className="font-semibold">🔥{row.streak}</span>}
+                {row.movement !== 0 && <Movimiento delta={row.movement} />}
+              </p>
+            )}
           </motion.button>
         )
       })}

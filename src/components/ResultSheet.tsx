@@ -63,10 +63,8 @@ export default function ResultSheet({
   const namesB = teamB.playerIds.map(id => (players.get(id)?.name ?? '?')).join(' · ')
 
   const [mode, setMode] = useState<'quick' | 'sets'>(match.result?.sets !== undefined ? 'sets' : 'quick')
-  const [sets, setSets] = useState(match.result?.sets ?? [
-    { a: 0, b: 0 },
-    { a: 0, b: 0 },
-  ])
+  // por defecto se carga 1 set; el 2do (y el súper TB) se agregan a mano
+  const [sets, setSets] = useState(match.result?.sets ?? [{ a: 0, b: 0 }])
 
   const hasResult = fresh.result !== undefined
   const error = mode === 'sets' ? validateMatchSets(sets) : null

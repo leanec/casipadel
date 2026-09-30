@@ -34,11 +34,38 @@ function session(id: string, date: string, matches: Match[], overrides: Partial<
 }
 
 describe('mergePlayers', () => {
-  it('unión por id; en conflicto gana el servidor; agrega los nuevos', () => {
+  it('unión por id; sin marcas de edición en conflicto gana el servidor; agrega los nuevos', () => {
     const local = [player('a', 'Ana local'), player('b')]
     const remote = [player('a', 'Ana servidor'), player('c')]
     const merged = mergePlayers(local, remote)
     expect(merged.map(p => p.name)).toEqual(['Ana servidor', 'b', 'c'])
+  })
+
+  it('una edición local (updatedAt) no se pierde contra la copia vieja del servidor', () => {
+    const editado = { ...player('a', 'Ana editada'), updatedAt: '2026-09-30T22:00:00.000Z' }
+    const merged = mergePlayers([editado], [player('a', 'Ana servidor')])
+    expect(merged[0].name).toBe('Ana editada')
+  })
+
+  it('gana la copia con updatedAt más nuevo (edición remota más reciente)', () => {
+    const local = { ...player('a', 'Ana local'), updatedAt: '2026-09-30T21:00:00.000Z' }
+    const remote = { ...player('a', 'Ana remota'), updatedAt: '2026-09-30T22:00:00.000Z' }
+    const merged = mergePlayers([local], [remote])
+    expect(merged[0].name).toBe('Ana remota')
+  })
+
+  it('solo el servidor tiene updatedAt ⇒ gana el servidor (copia local intacta)', () => {
+    const local = player('a', 'Ana local')
+    const remote = { ...player('a', 'Ana remota'), updatedAt: '2026-09-30T22:00:00.000Z' }
+    const merged = mergePlayers([local], [remote])
+    expect(merged[0].name).toBe('Ana remota')
+  })
+
+  it('updatedAt iguales ⇒ servidor (desempate estable)', () => {
+    const local = { ...player('a', 'Ana local'), updatedAt: '2026-09-30T22:00:00.000Z' }
+    const remote = { ...player('a', 'Ana remota'), updatedAt: '2026-09-30T22:00:00.000Z' }
+    const merged = mergePlayers([local], [remote])
+    expect(merged[0].name).toBe('Ana remota')
   })
 })
 

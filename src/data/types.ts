@@ -5,6 +5,9 @@ export interface Player {
   /** Matiz 0-360 para el degradado del avatar */
   hue: number
   createdAt: string
+  /** ISO de la última edición: en la fusión gana la copia más nueva (evita que
+   *  un rename local se pierda contra una copia vieja del servidor) */
+  updatedAt?: string
 }
 
 export type TeamColor = 'lima' | 'cian' | 'magenta' | 'naranja'

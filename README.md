@@ -4,7 +4,7 @@
 
 # Casi Pádel 🎾
 
-**La liga de los lunes, en el bolsillo.** App web mobile-first para gestionar un grupo de pádel: sorteo animado de parejas, fixture automático, carga de resultados en vivo, tabla del día, ranking ELO de temporada e imágenes listas para compartir en el grupo de WhatsApp.
+**La liga de los lunes, en el bolsillo.** App web mobile-first para gestionar un grupo de pádel: sorteo animado de parejas, fixture automático, carga de resultados en vivo, tabla del día, ranking ELO de temporada con rangos y récords, premios, e imágenes listas para compartir en el grupo de WhatsApp.
 
 - **App en producción**: <https://leanec.github.io/casipadel>
 - **Idioma**: español (rioplatense) · **Diseño**: dark “night pádel”, glass cards, acento lima neón, tipografías Anton + Inter
@@ -23,10 +23,16 @@
 
 ### Temporada
 - **Ranking ELO** — base 1000, K=32, se recalcula siempre desde el historial (nunca se guarda un ELO viejo): partidos, títulos, rachas, movimiento vs. la jornada anterior, sparkline de evolución, forma y mejor dupla.
-- **Premios de temporada** — pantalla de awards con líderes de cada categoría.
-- **Badges** — 🧹 barrida (3-0 el día), 🔄 remontada (perder el 1er set y ganar), 🔥 rachas y 👑 títulos.
+- **Casi Rangos** — cinco franjas de ELO con humor de la casa (🐣 Casi Principiante → 👑 Casi Leyenda), visibles en la tabla y en el perfil, con barra de progreso hacia el próximo rango.
+- **Cara a cara 🆚** — el historial entre dos jugadores: de rivales (marcador grande) y de dupla.
+- **El puntero 👟 vs el fantasma 👻** — rachas de asistencia: quién viene desde más lunes seguidos y quién acumula ausencias (el fantasma aparece desde dos lunes seguidos sin venir).
+- **Invitados 🎈** — los jugadores de recambio juegan y mueven el ELO de sus rivales, pero quedan fuera del ranking, del podio y de los premios. Un toggle los convierte en titulares (con todo su historial) cuando se quedan en el grupo.
+- **Premios de temporada** — campeón, la corona, mejor dupla, química prohibida (la peor dupla), racha imparable, rey de la remontada, la escoba, más wins y El Casi (el 50% más justo). Solo corren titulares.
+- **Badges** — 🧹 barrida (3-0 el día), 🔄 remontada (perder el 1er set y ganar), 🔥 rachas y 👑 títulos; se coleccionan en la vitrina de cada perfil.
+- **El Museo 🏛️** — los récords históricos de la liga: la corona eterna, la racha histórica, el ELO dorado (el pico, aunque después caiga), alma de remontador, la escoba de oro, piernas de acero, la dupla del siglo y la sala de la vergüenza.
+- **¿Cómo funciona?** — las reglas de la liga (ELO, rangos, cómo leer la tabla, los premios) explicadas para el grupo, a un botón ❓ de distancia.
 - **Historial** — todas las jornadas con su campeón; se pueden reabrir para corregir o **eliminar** (con confirmación).
-- **Compartir** — imágenes 1080×1350 generadas en canvas puro: resumen del día (campeón + tabla + badges), tabla del día y top-5 de la temporada. Web Share API con fallback a descarga.
+- **Compartir** — imágenes 1080×1350 generadas en canvas puro: resumen del día (campeón + tabla + badges), tabla del día, top-5 de la temporada y **la previa** 📣 (parejas sorteadas + líneas de color para calentar el WhatsApp antes de jugar). Web Share API con fallback a descarga.
 
 ### Grupo compartido (modo nube)
 Un **PIN de 6 dígitos** desbloquea la liga del grupo en cualquier celular. Todos ven lo mismo, en tiempo real:
@@ -64,11 +70,12 @@ npm run league:bootstrap  # crea la liga del grupo en Supabase con el PIN (una s
 ```
 src/
 ├── logic/      # funciones puras + tests: sorteo, fixture, validación de sets,
-│               # tabla, ELO, stats, badges, modelos de las imágenes
+│               # tabla, ELO, rangos, asistencia, stats, badges, premios,
+│               # récords, previa y modelos de las imágenes
 ├── data/       # modelo de datos, store (contexto React), repositorio
 │               # localStorage, PIN, fusión (merge) y motor de sincronización
-├── screens/    # Home, Ranking, Premios, Jugadores, Nuevo sorteo, Sorteo,
-│               # Jornada, Campeón, Historial, Perfil, PinGate
+├── screens/    # Home, Ranking, Premios, Museo, Cómo funciona, Jugadores,
+│               # Nuevo sorteo, Sorteo, Jornada, Campeón, Historial, PinGate
 ├── components/ # UI: cards, sheets, tabla, nav, botón de compartir…
 └── share/      # render de imágenes en canvas + Web Share API
 supabase/

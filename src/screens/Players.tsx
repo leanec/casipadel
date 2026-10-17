@@ -34,6 +34,11 @@ export default function Players() {
           >
             <Avatar player={p} size="lg" />
             <span className="mt-1 max-w-full truncate text-sm font-semibold">{p.name}</span>
+            {p.invitado === true && (
+              <span className="text-[9px] font-bold uppercase tracking-wider text-mute">
+                🎈 Invitado
+              </span>
+            )}
             <span className="text-[9px] font-bold uppercase tracking-wider text-mute">
               Editar
             </span>

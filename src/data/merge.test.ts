@@ -67,6 +67,23 @@ describe('mergePlayers', () => {
     const merged = mergePlayers([local], [remote])
     expect(merged[0].name).toBe('Ana remota')
   })
+
+  it('el flag invitado viaja con la copia ganadora del LWW (en ambos sentidos)', () => {
+    const local = {
+      ...player('a', 'Ana'),
+      invitado: true,
+      updatedAt: '2026-10-17T20:00:00.000Z',
+    }
+    const remote = { ...player('a', 'Ana'), updatedAt: '2026-10-17T19:00:00.000Z' }
+    expect(mergePlayers([local], [remote])[0].invitado).toBe(true)
+    // si otra edición más nueva se lo saca, también gana el merge
+    const remoteNuevo = {
+      ...player('a', 'Ana'),
+      invitado: false,
+      updatedAt: '2026-10-17T21:00:00.000Z',
+    }
+    expect(mergePlayers([local], [remoteNuevo])[0].invitado).toBe(false)
+  })
 })
 
 describe('mergeSession', () => {

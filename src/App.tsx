@@ -13,6 +13,7 @@ import Champion from './screens/Champion'
 import History from './screens/History'
 import Ranking from './screens/Ranking'
 import Awards from './screens/Awards'
+import HowTo from './screens/HowTo'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/premios" element={<Awards />} />
+              <Route path="/como" element={<HowTo />} />
               <Route path="/players" element={<Players />} />
               <Route path="/new" element={<NewSession />} />
               <Route path="/draw" element={<Draw />} />

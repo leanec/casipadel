@@ -33,6 +33,7 @@ export interface PlayerInput {
   name: string
   emoji: string
   hue: number
+  invitado?: boolean
 }
 
 interface LeagueActions {

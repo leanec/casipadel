@@ -21,6 +21,7 @@ export default function PlayerSheet({
     player?.emoji ?? EMOJIS[league.players.length % EMOJIS.length],
   )
   const [hue, setHue] = useState(player?.hue ?? HUES[league.players.length % HUES.length])
+  const [invitado, setInvitado] = useState(player?.invitado ?? false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const duplicate = league.players.some(
@@ -32,9 +33,9 @@ export default function PlayerSheet({
     const trimmed = name.trim()
     if (trimmed === '') return
     if (player !== undefined) {
-      actions.updatePlayer(player.id, { name: trimmed, emoji, hue })
+      actions.updatePlayer(player.id, { name: trimmed, emoji, hue, invitado })
     } else {
-      actions.addPlayer({ name: trimmed, emoji, hue })
+      actions.addPlayer({ name: trimmed, emoji, hue, invitado })
     }
     onClose()
   }
@@ -45,6 +46,7 @@ export default function PlayerSheet({
     emoji,
     hue,
     createdAt: '',
+    invitado,
   }
 
   return (
@@ -82,6 +84,33 @@ export default function PlayerSheet({
           </button>
         ))}
       </div>
+
+      <label className="label">Rol en el grupo</label>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setInvitado(false)}
+          className={`rounded-xl py-2.5 text-sm font-semibold transition ${
+            invitado ? 'bg-white/5 text-mute' : 'bg-lime/15 text-lime ring-1 ring-lime'
+          }`}
+        >
+          🏷️ Titular
+        </button>
+        <button
+          type="button"
+          onClick={() => setInvitado(true)}
+          className={`rounded-xl py-2.5 text-sm font-semibold transition ${
+            invitado ? 'bg-lime/15 text-lime ring-1 ring-lime' : 'bg-white/5 text-mute'
+          }`}
+        >
+          🎈 Invitado
+        </button>
+      </div>
+      <p className="mt-1.5 text-xs text-mute">
+        {invitado
+          ? 'Fuera del ranking y de los premios; sus partidos igual cuentan para el ELO.'
+          : 'Corre la temporada completa: ranking, podio y premios.'}
+      </p>
 
       <label className="label">Color</label>
       <div className="grid grid-cols-6 gap-2">

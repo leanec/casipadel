@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { League, Match, Player, Session, Team } from '../data/types'
-import { countTitles, rankingRows, seasonStats } from './stats'
+import { countTitles, guestRows, rankingRows, seasonStats } from './stats'
 import { computeElo } from './elo'
 
 function player(id: string): Player {
@@ -141,5 +141,35 @@ describe('rankingRows', () => {
     expect(pg.movement).toBeGreaterThan(0) // venía último y subió
     const pa = rows.find(r => r.playerId === 'pa')!
     expect(pa.movement).toBeLessThan(0) // venía 1° y cayó
+  })
+})
+
+describe('ranking con invitados 🎈', () => {
+  it('el invitado queda fuera del ranking y aparece en guestRows', () => {
+    const l = league([fullSession('s1', '2026-09-14')])
+    l.players = l.players.map(p => (p.id === 'pg' ? { ...p, invitado: true } : p))
+    const rows = rankingRows(l)
+    expect(rows).toHaveLength(7)
+    expect(rows.map(r => r.playerId)).not.toContain('pg')
+    expect(guestRows(l).map(r => r.playerId)).toEqual(['pg'])
+    // el orden de los titulares se corre un lugar: el último ahora es su ex compañero ph
+    expect(rows[rows.length - 1].playerId).toBe('ph')
+  })
+
+  it('un invitado que barrió igual no saca el podio de los titulares', () => {
+    const l = league([fullSession('s1', '2026-09-14')])
+    // ph "invitado estrella": barrió con pg, ELO alto, pero no rankea
+    l.players = l.players.map(p => (p.id === 'ph' ? { ...p, invitado: true } : p))
+    const rows = rankingRows(l)
+    expect(rows.map(r => r.playerId)).not.toContain('ph')
+    // el #1 sigue siendo de la dupla que barrió entre los titulares
+    expect(['pa', 'pb']).toContain(rows[0].playerId)
+    expect(guestRows(l)).toHaveLength(1)
+  })
+
+  it('sin invitados, guestRows es vacío y nada cambia', () => {
+    const l = league([fullSession('s1', '2026-09-14')])
+    expect(guestRows(l)).toEqual([])
+    expect(rankingRows(l)).toHaveLength(8)
   })
 })

@@ -66,6 +66,9 @@ export default function Awards() {
 
       <div className="mt-7 flex flex-col gap-3">
         <ShareImageButton kind="season" label="📤 Compartir temporada" />
+        <BigButton variant="ghost" onClick={() => navigate('/como')}>
+          ❓ Cómo funcionan los premios
+        </BigButton>
         <BigButton variant="ghost" onClick={() => navigate('/ranking')}>
           ← Volver al ranking
         </BigButton>

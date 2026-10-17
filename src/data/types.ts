@@ -8,6 +8,9 @@ export interface Player {
   /** ISO de la última edición: en la fusión gana la copia más nueva (evita que
    *  un rename local se pierda contra una copia vieja del servidor) */
   updatedAt?: string
+  /** 🎈 Invitado: juega y mueve el ELO de los que enfrentó, pero queda fuera
+   *  del ranking, del podio y de los premios de temporada */
+  invitado?: boolean
 }
 
 export type TeamColor = 'lima' | 'cian' | 'magenta' | 'naranja'

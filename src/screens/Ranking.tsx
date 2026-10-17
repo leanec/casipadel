@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { playerMap, playerOf } from '../logic/selectors'
-import { rankingRows, seasonStats, type RankingRow } from '../logic/stats'
+import { rankingRows, guestRows, seasonStats, type RankingRow } from '../logic/stats'
 import { playerBadges } from '../logic/badges'
+import { chemistryOf } from '../logic/awards'
 import { eloHistory } from '../logic/elo'
+import { nextRank, rankOf, rankProgress } from '../logic/ranks'
 import Avatar from '../components/Avatar'
 import CountUp from '../components/CountUp'
+import H2HSheet from '../components/H2HSheet'
 import Sheet from '../components/Sheet'
 import ShareImageButton from '../components/ShareImageButton'
 import Sparkline from '../components/Sparkline'
@@ -16,6 +19,15 @@ import { EASE } from '../components/anim'
 import type { Player } from '../data/types'
 
 const MEDALLAS = ['🥇', '🥈', '🥉']
+
+function RankTag({ elo }: { elo: number }) {
+  const rank = rankOf(elo)
+  return (
+    <span className={`font-semibold ${rank.text}`}>
+      {rank.emoji} {rank.name}
+    </span>
+  )
+}
 
 function Movimiento({ delta }: { delta: number }) {
   if (delta === 0) return <span className="text-xs text-mute">·</span>
@@ -61,6 +73,9 @@ function Podio({ rows, players, onOpen }: { rows: RankingRow[]; players: Map<str
                 {row.movement !== 0 && <Movimiento delta={row.movement} />}
               </p>
             )}
+            <p className="mt-1 text-[10px]">
+              <RankTag elo={row.elo} />
+            </p>
           </motion.button>
         )
       })}
@@ -85,9 +100,10 @@ function Fila({ row, pos, players, onOpen }: { row: RankingRow; pos: number; pla
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{player.name}</p>
         <p className="mt-0.5 flex items-center gap-2 text-[10px] text-mute">
+          <RankTag elo={row.elo} />
           {row.titles > 0 && <span>👑×{row.titles}</span>}
           {row.streak >= 2 && <span>🔥{row.streak}</span>}
-          {row.titles === 0 && row.streak < 2 && <span>{row.streak <= -2 ? `⚠️${-row.streak}` : '·'}</span>}
+          {row.streak <= -2 && <span>⚠️{-row.streak}</span>}
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end">
@@ -97,6 +113,22 @@ function Fila({ row, pos, players, onOpen }: { row: RankingRow; pos: number; pla
         <Movimiento delta={row.movement} />
       </div>
     </motion.button>
+  )
+}
+
+function FilaInvitado({ row, players, onOpen }: { row: RankingRow; players: Map<string, Player>; onOpen: (id: string) => void }) {
+  const player = playerOf(players, row.playerId)
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row.playerId)}
+      className="glass flex w-full items-center gap-3 rounded-2xl p-3 text-left"
+    >
+      <span className="w-6 text-center text-base">🎈</span>
+      <Avatar player={player} size="sm" />
+      <p className="min-w-0 flex-1 truncate text-sm font-semibold">{player.name}</p>
+      <span className="tnum font-display text-lg">{row.elo}</span>
+    </button>
   )
 }
 
@@ -112,12 +144,17 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
     history.length >= 2 ? Math.round(history[history.length - 1] - history[history.length - 2]) : 0
   const dupla =
     stats.bestPartner !== undefined ? playerOf(players, stats.bestPartner.playerId) : undefined
+  const quimica = chemistryOf(league)
+  const rank = rankOf(actual)
+  const next = nextRank(actual)
+  const progress = Math.round(rankProgress(actual) * 100)
 
   const vitrina: { emoji: string; text: string }[] = []
   if (badges.remontadas > 0) vitrina.push({ emoji: '🔄', text: `×${badges.remontadas} Remontada${badges.remontadas > 1 ? 's' : ''}` })
   if (badges.barridas > 0) vitrina.push({ emoji: '🧹', text: `×${badges.barridas} Barrida${badges.barridas > 1 ? 's' : ''}` })
   if (badges.bestStreak >= 5) vitrina.push({ emoji: '🌋', text: `Racha ${badges.bestStreak}` })
   else if (badges.bestStreak >= 3) vitrina.push({ emoji: '🔥', text: `Racha ${badges.bestStreak}` })
+  if (quimica !== undefined && quimica.ids.includes(playerId)) vitrina.push({ emoji: '🧪', text: 'Química prohibida' })
 
   return (
     <Sheet title="Perfil" onClose={onClose}>
@@ -125,6 +162,11 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
         <Avatar player={player} size="xl" />
         <div className="min-w-0">
           <p className="font-display truncate text-2xl uppercase leading-none">{player.name}</p>
+          {player.invitado === true && (
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-mute">
+              🎈 Invitado
+            </p>
+          )}
           <p className="tnum font-display mt-1 text-4xl leading-none text-lime">
             {actual}
             {delta !== 0 && (
@@ -134,6 +176,20 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
             )}
           </p>
         </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className={`font-display text-sm uppercase tracking-wide ${rank.text}`}>
+          {rank.emoji} {rank.name}
+        </span>
+        <span className="text-[10px] font-semibold text-mute">
+          {next !== undefined
+            ? `Faltan ${next.min - actual} pts para ${next.emoji} ${next.name}`
+            : 'Tope de la escala'}
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full rounded-full ${rank.bar}`} style={{ width: `${progress}%` }} />
       </div>
 
       <p className="label">Evolución</p>
@@ -212,8 +268,11 @@ export default function Ranking() {
   const navigate = useNavigate()
   const players = playerMap(league)
   const rows = rankingRows(league)
+  const guests = guestRows(league)
+  const quimica = chemistryOf(league)
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
   const [perfilId, setPerfilId] = useState<string | null>(null)
+  const [h2hOpen, setH2HOpen] = useState(false)
 
   return (
     <div>
@@ -225,6 +284,26 @@ export default function Ranking() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/como')}
+            aria-label="Cómo funciona"
+            title="Cómo funciona"
+            className="glass rounded-full px-3 py-2 text-base leading-none active:scale-95"
+          >
+            ❓
+          </button>
+          {league.players.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => setH2HOpen(true)}
+              aria-label="Cara a cara"
+              title="Cara a cara"
+              className="glass rounded-full px-3 py-2 text-base leading-none active:scale-95"
+            >
+              🆚
+            </button>
+          )}
           {hayTemporada && (
             <button
               type="button"
@@ -276,6 +355,37 @@ export default function Ranking() {
             Tocá a cualquiera para ver su perfil
           </p>
 
+          {guests.length > 0 && (
+            <>
+              <p className="label">🎈 Invitados</p>
+              <div className="flex flex-col gap-2">
+                {guests.map(row => (
+                  <FilaInvitado key={row.playerId} row={row} players={players} onOpen={setPerfilId} />
+                ))}
+              </div>
+              <p className="mt-2 text-center text-[10px] text-mute">
+                Juegan y mueven el ELO, pero no rankean ni ganan premios
+              </p>
+            </>
+          )}
+
+          {quimica !== undefined && (
+            <div className="glass mt-4 flex items-center gap-3 rounded-2xl p-3">
+              <span className="text-2xl">🧪</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
+                  Química prohibida
+                </p>
+                <p className="truncate text-sm font-semibold">
+                  {playerOf(players, quimica.ids[0]).name} & {playerOf(players, quimica.ids[1]).name}
+                </p>
+              </div>
+              <p className="tnum font-display text-lg text-danger">
+                {Math.round(quimica.winPct * 100)}%
+              </p>
+            </div>
+          )}
+
           <div className="mt-6">
             <ShareImageButton kind="season" label="📤 Compartir ranking" variant="ghost" />
           </div>
@@ -283,6 +393,7 @@ export default function Ranking() {
       )}
 
       {perfilId !== null && <PerfilSheet playerId={perfilId} onClose={() => setPerfilId(null)} />}
+      {h2hOpen && <H2HSheet onClose={() => setH2HOpen(false)} />}
     </div>
   )
 }

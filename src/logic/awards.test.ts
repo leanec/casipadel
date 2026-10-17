@@ -67,21 +67,77 @@ describe('seasonAwards', () => {
     expect(seasonAwards(league([s]))).toEqual([])
   })
 
-  it('una jornada: campeón, corona, dupla, racha y escoba (sin sets no hay remontador)', () => {
+  it('una jornada: campeón, corona, dupla, química, racha y escoba (sin sets no hay remontador)', () => {
     const l = league([fullSession('s1', '2026-09-14')])
     const awards = seasonAwards(l)
     const byId = new Map(awards.map(a => [a.id, a]))
 
-    expect(awards.map(a => a.id)).toEqual(['campeon', 'corona', 'dupla', 'racha', 'escoba'])
+    expect(awards.map(a => a.id)).toEqual([
+      'campeon',
+      'corona',
+      'dupla',
+      'quimica',
+      'racha',
+      'escoba',
+    ])
     // pa y pb empatan en todo: gana el id menor (determinístico)
     expect(byId.get('campeon')!.playerIds).toEqual(['pa'])
     expect(byId.get('corona')!.playerIds).toEqual(['pa'])
     expect(byId.get('dupla')!.playerIds).toEqual(['pa', 'pb'])
+    // el equipo D perdió todo: química prohibida
+    expect(byId.get('quimica')!.playerIds).toEqual(['pg', 'ph'])
+    expect(byId.get('quimica')!.detail).toContain('0 de 3')
     expect(byId.get('racha')!.playerIds).toEqual(['pa'])
     expect(byId.get('escoba')!.playerIds).toEqual(['pa'])
     // sin 6 partidos no se reparten Más wins ni El Casi
     expect(byId.has('mas-wins')).toBe(false)
     expect(byId.has('el-casi')).toBe(false)
+  })
+
+  it('dupla y química se necesitan ≥ MIN_DUPLA partidos juntos', () => {
+    // una sola jornada con un único partido cargado: nadie junta 3
+    const s = fullSession('s1', '2026-09-14')
+    s.matches = [s.matches[0]]
+    const byId = new Map(seasonAwards(league([s])).map(a => [a.id, a]))
+    expect(byId.has('dupla')).toBe(false)
+    expect(byId.has('quimica')).toBe(false)
+  })
+
+  it('química prohibida: peor % y desempate determinístico', () => {
+    const t = {
+      A: team('A', 'pa', 'pb'),
+      B: team('B', 'pc', 'pd'),
+      C: team('C', 'pe', 'pf'),
+      D: team('D', 'pg', 'ph'),
+    }
+    const fixture: [string, string, 1 | 2 | 3][] = [
+      ['A', 'B', 1],
+      ['C', 'D', 1],
+      ['A', 'C', 2],
+      ['B', 'D', 2],
+      ['A', 'D', 3],
+      ['B', 'C', 3],
+    ]
+    // ganadores s1: A, D, A, D, A, C ⇒ A 3-0 · B 0-3 · C 1-2 · D 2-1
+    const winners: ('A' | 'B')[] = ['A', 'B', 'A', 'B', 'A', 'B']
+    const s1: Session = {
+      id: 's1',
+      date: '2026-09-14',
+      playerIds: ['pa', 'pb', 'pc', 'pd', 'pe', 'pf', 'pg', 'ph'],
+      teams: [t.A, t.B, t.C, t.D],
+      matches: fixture.map(([a, b, r], i) =>
+        match(`s1-${i + 1}`, a, b, r, { winner: winners[i] }),
+      ),
+      status: 'finished',
+      championTeamIds: ['A'],
+    }
+    // s2 estándar: A 3-0 · B 2-1 · C 1-2 · D 0-3 ⇒ B, C y D quedan 2 de 6 (33%)
+    const l = league([s1, fullSession('s2', '2026-09-21')])
+    const byId = new Map(seasonAwards(l).map(a => [a.id, a]))
+    // empate en % entre tres duplas ⇒ gana la clave menor (pc|pd), determinístico
+    expect(byId.get('quimica')!.playerIds).toEqual(['pc', 'pd'])
+    expect(byId.get('quimica')!.detail).toContain('2 de 6')
+    expect(byId.get('dupla')!.playerIds).toEqual(['pa', 'pb'])
   })
 
   it('Más wins para el que ganó todo y El Casi para el 50% justo', () => {
@@ -126,6 +182,21 @@ describe('seasonAwards', () => {
     const byId = new Map(seasonAwards(l).map(a => [a.id, a]))
     expect(byId.get('remontador')!.playerIds).toEqual(['pa'])
     expect(byId.get('remontador')!.detail).toContain('1 remontada')
+  })
+
+  it('los invitados no ganan premios ni ensucian las duplas', () => {
+    const l = league([fullSession('s1', '2026-09-14')])
+    // pg es invitado: la dupla D (pg,ph) era la peor, pero con un invitado adentro no cuenta
+    l.players = l.players.map(p => (p.id === 'pg' ? { ...p, invitado: true } : p))
+    const byId = new Map(seasonAwards(l).map(a => [a.id, a]))
+    expect(byId.get('quimica')!.playerIds).toEqual(['pe', 'pf'])
+    expect(byId.get('dupla')!.playerIds).toEqual(['pa', 'pb'])
+    expect(byId.get('campeon')!.playerIds).toEqual(['pa'])
+    // y el campeón nunca puede ser un invitado, ni aunque haya barrido
+    const l2 = league([fullSession('s1', '2026-09-14')])
+    l2.players = l2.players.map(p => (p.id === 'pa' ? { ...p, invitado: true } : p))
+    const byId2 = new Map(seasonAwards(l2).map(a => [a.id, a]))
+    expect(['pb', 'pc', 'pd', 'pe', 'pf', 'pg', 'ph']).toContain(byId2.get('campeon')!.playerIds[0])
   })
 
   it('determinístico: la misma liga da los mismos premios', () => {

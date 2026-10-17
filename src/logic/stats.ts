@@ -1,4 +1,4 @@
-import type { League } from '../data/types'
+import type { League, Player } from '../data/types'
 import { chronologicalFinishedSessions, computeElo, ELO_BASE } from './elo'
 
 export interface SeasonStats {
@@ -99,9 +99,14 @@ export interface RankingRow {
   movement: number
 }
 
-function sortedRows(league: League): RankingRow[] {
+/** Los de la casa: los invitados 🎈 juegan pero no rankean */
+function titulares(league: League): Player[] {
+  return league.players.filter(p => p.invitado !== true)
+}
+
+function sortedRows(league: League, players: Player[]): RankingRow[] {
   const elo = computeElo(league)
-  return league.players
+  return players
     .map(p => {
       const stats = seasonStats(league, p.id)
       return {
@@ -126,7 +131,7 @@ function sortedRows(league: League): RankingRow[] {
 }
 
 export function rankingRows(league: League): RankingRow[] {
-  const current = sortedRows(league)
+  const current = sortedRows(league, titulares(league))
   const chrono = chronologicalFinishedSessions(league)
   // con 0 o 1 jornada terminada no hay "ranking anterior" contra cual comparar
   if (current.length === 0 || chrono.length <= 1) return current
@@ -137,11 +142,16 @@ export function rankingRows(league: League): RankingRow[] {
     ...league,
     sessions: league.sessions.filter(s => s.id !== lastFinished.id),
   }
-  const prevPos = new Map(sortedRows(before).map((r, i) => [r.playerId, i + 1]))
+  const prevPos = new Map(sortedRows(before, titulares(before)).map((r, i) => [r.playerId, i + 1]))
   const currPos = new Map(current.map((r, i) => [r.playerId, i + 1]))
   return current.map(r => {
     const prev = prevPos.get(r.playerId)
     // jugador incorporado después de la última jornada: sin flecha
     return { ...r, movement: prev === undefined ? 0 : prev - (currPos.get(r.playerId) ?? prev) }
   })
+}
+
+/** 🎈 Invitados con su ELO, fuera del ranking principal (sin flechas) */
+export function guestRows(league: League): RankingRow[] {
+  return sortedRows(league, league.players.filter(p => p.invitado === true))
 }

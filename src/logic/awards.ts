@@ -68,9 +68,42 @@ function pairAggregates(league: League): {
   return [...agg.entries()].map(([key, e]) => ({ key, ...e }))
 }
 
+export interface DuplaStat {
+  ids: [string, string]
+  played: number
+  won: number
+  winPct: number
+}
+
+function toDuplaStat(d: { ids: [string, string]; played: number; won: number }): DuplaStat {
+  return { ...d, winPct: d.won / d.played }
+}
+
+/** 💥 Mejor dupla histórica entre titulares: ≥ MIN_DUPLA juntos, mayor % de victorias */
+export function bestDupla(league: League): DuplaStat | undefined {
+  const duplas = duplasDeTitulares(league)
+  const winner = best(duplas.map(d => ({ item: d, value: d.won / d.played, tie: d.won, key: d.key })))
+  return winner !== undefined ? toDuplaStat(winner.item) : undefined
+}
+
+/** 🧪 Química prohibida: el espejo de la mejor dupla (menor %, a igual % gana la que más jugó) */
+export function chemistryOf(league: League): DuplaStat | undefined {
+  const duplas = duplasDeTitulares(league)
+  const worst = best(duplas.map(d => ({ item: d, value: -d.won / d.played, tie: d.played, key: d.key })))
+  return worst !== undefined ? toDuplaStat(worst.item) : undefined
+}
+
+function duplasDeTitulares(league: League) {
+  const invitados = new Set(league.players.filter(p => p.invitado === true).map(p => p.id))
+  return pairAggregates(league)
+    .filter(d => !invitados.has(d.ids[0]) && !invitados.has(d.ids[1]))
+    .filter(d => d.played >= MIN_DUPLA)
+}
+
 export function seasonAwards(league: League): Award[] {
   if (chronologicalFinishedSessions(league).length === 0) return []
   const awards: Award[] = []
+  const titulares = league.players.filter(p => p.invitado !== true)
 
   const statsOf = new Map(league.players.map(p => [p.id, seasonStats(league, p.id)]))
   const badgesOf = new Map(league.players.map(p => [p.id, playerBadges(league, p.id)]))
@@ -90,7 +123,7 @@ export function seasonAwards(league: League): Award[] {
   }
 
   // 👑 La corona: más títulos de jornada
-  const conTitulos = league.players.filter(p => stats(p.id).titles > 0)
+  const conTitulos = titulares.filter(p => stats(p.id).titles > 0)
   const corona = best(
     conTitulos.map(p => ({ item: p, value: stats(p.id).titles, tie: stats(p.id).played, key: p.id })),
   )
@@ -106,20 +139,31 @@ export function seasonAwards(league: League): Award[] {
   }
 
   // 💥 Mejor dupla: ≥ MIN_DUPLA partidos juntos con mejor %
-  const duplas = pairAggregates(league).filter(d => d.played >= MIN_DUPLA)
-  const dupla = best(duplas.map(d => ({ item: d, value: d.won / d.played, tie: d.won, key: d.key })))
+  const dupla = bestDupla(league)
   if (dupla !== undefined) {
     awards.push({
       id: 'dupla',
       emoji: '💥',
       title: 'Mejor dupla',
-      playerIds: [...dupla.item.ids],
-      detail: `${dupla.item.won} de ${dupla.item.played} juntos (${Math.round((dupla.item.won / dupla.item.played) * 100)}%)`,
+      playerIds: [...dupla.ids],
+      detail: `${dupla.won} de ${dupla.played} juntos (${Math.round(dupla.winPct * 100)}%)`,
+    })
+  }
+
+  // 🧪 Química prohibida: el anti-premio de la mejor dupla
+  const quimica = chemistryOf(league)
+  if (quimica !== undefined) {
+    awards.push({
+      id: 'quimica',
+      emoji: '🧪',
+      title: 'Química prohibida',
+      playerIds: [...quimica.ids],
+      detail: `${quimica.won} de ${quimica.played} juntos (${Math.round(quimica.winPct * 100)}%) — mejor no repetir`,
     })
   }
 
   // 🌋 Racha imparable: pico histórico ≥ 3 victorias seguidas
-  const conRacha = league.players.filter(p => (badgesOf.get(p.id)?.bestStreak ?? 0) >= 3)
+  const conRacha = titulares.filter(p => (badgesOf.get(p.id)?.bestStreak ?? 0) >= 3)
   const racha = best(
     conRacha.map(p => ({ item: p, value: badgesOf.get(p.id)!.bestStreak, tie: stats(p.id).played, key: p.id })),
   )
@@ -134,7 +178,7 @@ export function seasonAwards(league: League): Award[] {
   }
 
   // 🔄 Rey de la remontada
-  const conRemontadas = league.players.filter(p => (badgesOf.get(p.id)?.remontadas ?? 0) >= 1)
+  const conRemontadas = titulares.filter(p => (badgesOf.get(p.id)?.remontadas ?? 0) >= 1)
   const remontador = best(
     conRemontadas.map(p => ({ item: p, value: badgesOf.get(p.id)!.remontadas, tie: stats(p.id).played, key: p.id })),
   )
@@ -149,7 +193,7 @@ export function seasonAwards(league: League): Award[] {
   }
 
   // 🧹 La escoba: más barridas del día
-  const conBarridas = league.players.filter(p => (badgesOf.get(p.id)?.barridas ?? 0) >= 1)
+  const conBarridas = titulares.filter(p => (badgesOf.get(p.id)?.barridas ?? 0) >= 1)
   const escoba = best(
     conBarridas.map(p => ({ item: p, value: badgesOf.get(p.id)!.barridas, tie: stats(p.id).played, key: p.id })),
   )
@@ -164,7 +208,7 @@ export function seasonAwards(league: League): Award[] {
   }
 
   // 💪 Más wins: mejor % con al menos 6 partidos
-  const regulares = league.players.filter(p => stats(p.id).played >= 6)
+  const regulares = titulares.filter(p => stats(p.id).played >= 6)
   const masWins = best(
     regulares.map(p => ({ item: p, value: stats(p.id).winPct, tie: stats(p.id).won, key: p.id })),
   )

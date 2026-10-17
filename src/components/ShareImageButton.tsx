@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import { useLeague } from '../data/store'
 import { getSession } from '../logic/selectors'
+import { buildPrevia } from '../logic/previa'
 import { buildDayTable, buildSeasonSummary, buildSessionSummary } from '../logic/summary'
-import { drawDayTable, drawSeasonSummary, drawSessionSummary, IMAGE_SIZE } from '../share/render'
+import {
+  drawDayTable,
+  drawPrevia,
+  drawSeasonSummary,
+  drawSessionSummary,
+  IMAGE_SIZE,
+} from '../share/render'
 import { shareCanvas } from '../share/share'
 import BigButton from './BigButton'
 
-/** Genera la imagen (día, tabla del día o temporada) en un canvas fuera de
+/** Genera la imagen (día, tabla del día, temporada o previa) en un canvas fuera de
  *  pantalla y la comparte. `compact` renderiza un chip con el icono en vez de
  *  botón grande (para encabezados de sección). */
 export default function ShareImageButton({
@@ -16,7 +23,7 @@ export default function ShareImageButton({
   variant = 'primary',
   compact = false,
 }: {
-  kind: 'day' | 'table' | 'season'
+  kind: 'day' | 'table' | 'season' | 'previa'
   sessionId?: string
   label: string
   variant?: 'primary' | 'ghost'
@@ -42,6 +49,9 @@ export default function ShareImageButton({
           await drawDayTable(canvas, buildDayTable(league, session))
           await shareCanvas(canvas, `casipadel-tabla-${session.date}.png`)
         }
+      } else if (kind === 'previa') {
+        await drawPrevia(canvas, buildPrevia(league))
+        await shareCanvas(canvas, 'casipadel-previa.png')
       } else {
         await drawSeasonSummary(canvas, buildSeasonSummary(league))
         await shareCanvas(canvas, 'casipadel-temporada.png')

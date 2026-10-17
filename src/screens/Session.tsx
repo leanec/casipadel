@@ -76,6 +76,12 @@ export default function Session() {
         </button>
       )}
 
+      {!finished && (
+        <div className="mt-4">
+          <ShareImageButton kind="previa" label="📣 Compartir la previa" variant="ghost" />
+        </div>
+      )}
+
       {([1, 2, 3] as const).map(round => (
         <section key={round} className="mt-6">
           <h3 className="section-title">Ronda {round}</h3>

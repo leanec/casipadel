@@ -63,3 +63,18 @@ export function eloHistory(league: League, playerId: string): number[] {
   }
   return history
 }
+
+/** Pico histórico de ELO de cada jugador: el valor más alto que tuvo alguna vez */
+export function eloPeaks(league: League): Map<string, number> {
+  const elo = new Map<string, number>()
+  const peaks = new Map<string, number>()
+  for (const p of league.players) peaks.set(p.id, ELO_BASE)
+  for (const session of chronologicalFinishedSessions(league)) {
+    playSession(session, elo)
+    for (const id of session.playerIds) {
+      const r = elo.get(id) ?? ELO_BASE
+      if (r > (peaks.get(id) ?? ELO_BASE)) peaks.set(id, r)
+    }
+  }
+  return peaks
+}

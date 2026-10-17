@@ -1,4 +1,5 @@
 import type { DayTableModel, SeasonSummaryModel, SessionSummaryModel } from '../logic/summary'
+import type { PreviaModel } from '../logic/previa'
 
 /**
  * Motor de dibujo de las imágenes compartibles (canvas 2D puro, sin dependencias).
@@ -374,8 +375,90 @@ export async function drawDayTable(
   footer(ctx)
 }
 
-export async function drawSeasonSummary(
-  canvas: HTMLCanvasElement,
+/** La previa: parejas sorteadas (si hay jornada en curso) + líneas de color */
+export async function drawPrevia(canvas: HTMLCanvasElement, model: PreviaModel): Promise<void> {
+  await ensureFonts()
+  const ctx = setup(canvas)
+
+  wordmark(ctx, 110)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.font = `800 26px ${FONT_BODY}`
+  tracking(ctx, 5)
+  ctx.fillStyle = MUTE
+  ctx.fillText(model.fechaLabel.toUpperCase(), 540, 168)
+  tracking(ctx, 0)
+
+  ctx.font = `72px ${FONT_DISPLAY}`
+  ctx.save()
+  ctx.shadowColor = 'rgba(198, 244, 50, 0.35)'
+  ctx.shadowBlur = 24
+  ctx.fillStyle = LIME
+  ctx.fillText('LA PREVIA', 540, 252)
+  ctx.restore()
+
+  // chip de estado: en cancha (lima) o se viene el lunes (neutro)
+  ctx.font = `800 24px ${FONT_BODY}`
+  tracking(ctx, 3)
+  const chipW = ctx.measureText(model.statusLabel).width + 76
+  const chipY = 292
+  glassCard(ctx, 540 - chipW / 2, chipY, chipW, 54, 27)
+  if (model.live) {
+    rr(ctx, 540 - chipW / 2, chipY, chipW, 54, 27)
+    ctx.strokeStyle = 'rgba(198, 244, 50, 0.45)'
+    ctx.lineWidth = 3
+    ctx.stroke()
+  }
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = model.live ? LIME : MUTE
+  ctx.fillText(model.statusLabel, 540, chipY + 28)
+  tracking(ctx, 0)
+
+  let top: number
+  const conEquipos = model.equipos.length > 0
+  if (conEquipos) {
+    const cardW = 470
+    const cardH = 170
+    model.equipos.forEach((eq, i) => {
+      const x = 60 + (i % 2) * (cardW + 20)
+      const y = 380 + Math.floor(i / 2) * (cardH + 18)
+      glassCard(ctx, x, y, cardW, cardH, 24)
+      avatar(ctx, x + 58, y + 60, 34, eq.hue1, eq.emoji1)
+      avatar(ctx, x + 138, y + 60, 34, eq.hue2, eq.emoji2)
+      ctx.textAlign = 'left'
+      ctx.font = `600 28px ${FONT_BODY}`
+      ctx.fillStyle = INK
+      ctx.fillText(ellipsis(ctx, eq.jugadores, cardW - 48), x + 24, y + 126)
+      ctx.font = `800 18px ${FONT_BODY}`
+      tracking(ctx, 2)
+      ctx.fillStyle = MUTE
+      ctx.fillText(ellipsis(ctx, eq.nombre.toUpperCase(), cardW - 48), x + 24, y + 152)
+      tracking(ctx, 0)
+    })
+    top = 380 + 2 * (cardH + 18) + 26
+  } else {
+    top = 366
+  }
+
+  const rowH = conEquipos ? 92 : 104
+  const gap = conEquipos ? 14 : 16
+  model.lineas.forEach((linea, i) => {
+    const y = top + i * (rowH + gap)
+    glassCard(ctx, 60, y, 960, rowH, 22)
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    ctx.font = '40px sans-serif'
+    ctx.fillText(linea.emoji, 92, y + rowH / 2)
+    ctx.font = `600 30px ${FONT_BODY}`
+    ctx.fillStyle = INK
+    ctx.fillText(ellipsis(ctx, linea.texto, 800), 150, y + rowH / 2)
+  })
+
+  footer(ctx)
+}
+
+export async function drawSeasonSummary(  canvas: HTMLCanvasElement,
   model: SeasonSummaryModel,
 ): Promise<void> {
   await ensureFonts()

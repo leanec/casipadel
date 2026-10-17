@@ -4,11 +4,13 @@ import { motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { playerMap, playerOf } from '../logic/selectors'
 import { rankingRows, guestRows, seasonStats, type RankingRow } from '../logic/stats'
+import { estadoAsistencia, asistenciaDe } from '../logic/asistencia'
 import { playerBadges } from '../logic/badges'
 import { chemistryOf } from '../logic/awards'
 import { eloHistory } from '../logic/elo'
 import { nextRank, rankOf, rankProgress } from '../logic/ranks'
 import Avatar from '../components/Avatar'
+import BigButton from '../components/BigButton'
 import CountUp from '../components/CountUp'
 import H2HSheet from '../components/H2HSheet'
 import Sheet from '../components/Sheet'
@@ -148,6 +150,7 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
   const rank = rankOf(actual)
   const next = nextRank(actual)
   const progress = Math.round(rankProgress(actual) * 100)
+  const asist = asistenciaDe(league, playerId)
 
   const vitrina: { emoji: string; text: string }[] = []
   if (badges.remontadas > 0) vitrina.push({ emoji: '🔄', text: `×${badges.remontadas} Remontada${badges.remontadas > 1 ? 's' : ''}` })
@@ -211,6 +214,16 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
         ))}
       </div>
 
+      {asist !== 0 && (
+        <p
+          className={`mt-3 text-center text-xs font-semibold ${
+            asist > 0 ? 'text-lime' : 'text-danger'
+          }`}
+        >
+          {asist > 0 ? `👟 ${asist} lunes seguidos` : `👻 ${-asist} lunes sin venir`}
+        </p>
+      )}
+
       {vitrina.length > 0 ? (
         <>
           <p className="label">Vitrina</p>
@@ -270,6 +283,8 @@ export default function Ranking() {
   const rows = rankingRows(league)
   const guests = guestRows(league)
   const quimica = chemistryOf(league)
+  const asist = estadoAsistencia(league)
+  const nombresDe = (ids: string[]) => ids.map(id => playerOf(players, id).name).join(', ')
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
   const [perfilId, setPerfilId] = useState<string | null>(null)
   const [h2hOpen, setH2HOpen] = useState(false)
@@ -355,6 +370,39 @@ export default function Ranking() {
             Tocá a cualquiera para ver su perfil
           </p>
 
+          {(asist.rachaPunteros > 0 || asist.fantasmas.length > 0) && (
+            <div className="glass mt-4 flex flex-col gap-3 rounded-2xl p-3">
+              {asist.rachaPunteros > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👟</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
+                      El puntero
+                    </p>
+                    <p className="truncate text-sm font-semibold">{nombresDe(asist.punteros)}</p>
+                  </div>
+                  <p className="tnum shrink-0 font-display text-lg text-lime">
+                    {asist.rachaPunteros} lunes
+                  </p>
+                </div>
+              )}
+              {asist.fantasmas.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">👻</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
+                      El fantasma
+                    </p>
+                    <p className="truncate text-sm font-semibold">{nombresDe(asist.fantasmas)}</p>
+                  </div>
+                  <p className="tnum shrink-0 font-display text-lg text-danger">
+                    {asist.ausencias} lunes
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {guests.length > 0 && (
             <>
               <p className="label">🎈 Invitados</p>
@@ -386,8 +434,11 @@ export default function Ranking() {
             </div>
           )}
 
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col gap-3">
             <ShareImageButton kind="season" label="📤 Compartir ranking" variant="ghost" />
+            <BigButton variant="ghost" onClick={() => navigate('/museo')}>
+              🏛️ El Museo
+            </BigButton>
           </div>
         </>
       )}

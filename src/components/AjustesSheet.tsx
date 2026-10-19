@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLeague } from '../data/store'
 import { SHARE_URL } from '../data/supabase'
+import BackupSection from './BackupSection'
 import BigButton from './BigButton'
 import Sheet from './Sheet'
 
@@ -36,6 +37,9 @@ export default function AjustesSheet({ onClose }: { onClose: () => void }) {
       <p className="mt-2 text-xs text-mute">
         Compartilo en el grupo de WhatsApp: cada uno lo abre, instala la app y entra con el PIN.
       </p>
+
+      <p className="label">Backup</p>
+      <BackupSection />
 
       {group.modoGrupo ? (
         <>

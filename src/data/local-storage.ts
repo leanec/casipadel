@@ -1,9 +1,9 @@
 import { freshLeague, type LeagueRepository } from './repository'
 import type { League } from './types'
 
-const STORAGE_KEY = 'casi-padel:v1'
+export const STORAGE_KEY = 'casi-padel:v1'
 
-function looksLikeLeague(value: unknown): value is League {
+export function looksLikeLeague(value: unknown): value is League {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
   return v.version === 1 && Array.isArray(v.players) && Array.isArray(v.sessions)

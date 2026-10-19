@@ -90,10 +90,16 @@ Deno.serve(async (req: Request) => {
       return json(req, { revision: rows[0].revision }, 200)
     }
 
-    // 0 filas ⇒ revisión vieja: devolvemos el estado actual para que fusione
+    // 0 filas ⇒ revisión vieja. Re-leemos la fila: el snapshot leído al inicio
+    // puede quedar viejo si otro dispositivo guardó mientras verificábamos el
+    // PIN, y fusionar contra un estado stale manda al cliente a otro 409 justo
+    // cuando más se sincroniza. El PATCH no se reintenta acá: la data que
+    // tenemos es la vieja del cliente, re-aplicarla pisaría el guardado del otro.
+    const fresca = await filaActual()
+    if (fresca === null) return json(req, { error: 'sin-liga' }, 404)
     return json(
       req,
-      { error: 'revision', data: fila.data, revision: fila.revision },
+      { error: 'revision', data: fresca.data, revision: fresca.revision },
       409,
     )
   } catch {

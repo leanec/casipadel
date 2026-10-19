@@ -51,6 +51,8 @@ interface LeagueActions {
   reopenSession(sessionId: string): void
   /** Borra la jornada y deja el tombstone para que el sync no la reviva */
   deleteSession(sessionId: string): void
+  /** Reemplaza la liga entera (import de backup): persiste y sincroniza sola */
+  replaceLeague(league: League): void
 }
 
 export type UnlockResult = 'ok' | 'empty' | 'pin' | 'rate' | 'sin-liga' | 'red'
@@ -329,6 +331,8 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
           sessions: l.sessions.filter(s => s.id !== sessionId),
           deletedSessionIds: [...(l.deletedSessionIds ?? []), sessionId].sort(),
         })),
+      replaceLeague: imported =>
+        update(() => imported),
     }
   }, [])
 

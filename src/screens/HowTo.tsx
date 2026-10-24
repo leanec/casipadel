@@ -93,6 +93,12 @@ export default function HowTo() {
               </span>
             ))}
           </div>
+          <p className="mt-3 text-sm leading-relaxed">
+            Y la corona se defiende viniendo: <b>faltar 3 lunes seguidos empieza a restar</b> 10
+            puntos por cada lunes ausente, hasta descolgarse de vuelta en 1000 (nunca por debajo).
+            Los primeros 2 lunes de ausencia no cobran — con la rotación de siempre, nadie paga por
+            descansar.
+          </p>
         </div>
       </Seccion>
 

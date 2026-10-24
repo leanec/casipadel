@@ -3,6 +3,13 @@ import type { League, Session } from '../data/types'
 export const ELO_BASE = 1000
 export const ELO_K = 32
 
+// Decaimiento por inactividad: pasadas AUSENCIAS_GRACIA jornadas seguidas sin
+// jugar, cada jornada ausente resta DECAY_POR_AUSENCIA, drenando hacia ELO_BASE
+// sin cruzarlo (a los de abajo la inactividad no les regala puntos). No aplica
+// a invitados ni a quien todavía no debutó en ninguna jornada.
+export const DECAY_POR_AUSENCIA = 10
+export const AUSENCIAS_GRACIA = 2
+
 /**
  * ELO de temporada: siempre se recalcula desde el historial (nunca se persiste),
  * así reabrir una jornada o editar un resultado se refleja solo.
@@ -44,22 +51,57 @@ function playSession(session: Session, elo: Map<string, number>): void {
 
 /** ELO actual de cada jugador que jugó al menos un partido con resultado (default ELO_BASE) */
 export function computeElo(league: League): Map<string, number> {
-  const elo = new Map<string, number>()
-  for (const session of chronologicalFinishedSessions(league)) playSession(session, elo)
-  return elo
+  const m = marchaInicial()
+  const sinDecay = invitadosDe(league)
+  for (const session of chronologicalFinishedSessions(league)) pasoJornada(m, session, sinDecay)
+  return m.elo
+}
+
+/** Estado del recorrido por jornadas: ELO, debutados y ausencias seguidas */
+interface Marcha {
+  elo: Map<string, number>
+  vistos: Set<string>
+  ausencias: Map<string, number>
+}
+
+function marchaInicial(): Marcha {
+  return { elo: new Map(), vistos: new Set(), ausencias: new Map() }
+}
+
+function invitadosDe(league: League): Set<string> {
+  return new Set(league.players.filter(p => p.invitado === true).map(p => p.id))
+}
+
+/** Procesa una jornada: partidos con resultado + decaimiento de los ausentes */
+function pasoJornada(m: Marcha, session: Session, sinDecay: Set<string>): void {
+  playSession(session, m.elo)
+  for (const id of session.playerIds) {
+    m.vistos.add(id)
+    m.ausencias.set(id, 0)
+  }
+  for (const id of m.vistos) {
+    if (sinDecay.has(id) || session.playerIds.includes(id)) continue
+    const n = (m.ausencias.get(id) ?? 0) + 1
+    m.ausencias.set(id, n)
+    if (n > AUSENCIAS_GRACIA) {
+      const actual = m.elo.get(id) ?? ELO_BASE
+      if (actual > ELO_BASE) m.elo.set(id, Math.max(ELO_BASE, actual - DECAY_POR_AUSENCIA))
+    }
+  }
 }
 
 /**
- * Evolución del jugador: [base, ELO después de cada jornada terminada en la que jugó].
- * Se procesan todas las jornadas (los rivales también evolucionan aunque él falte).
+ * Evolución del jugador: [base, ELO después de cada jornada terminada desde su
+ * debut] — juegue o falte. Las faltas que decaen se ven como bajones en la
+ * sparkline; los rivales también evolucionan aunque él falte.
  */
 export function eloHistory(league: League, playerId: string): number[] {
-  const elo = new Map<string, number>()
-  const rating = (id: string) => elo.get(id) ?? ELO_BASE
+  const m = marchaInicial()
+  const sinDecay = invitadosDe(league)
   const history: number[] = [ELO_BASE]
   for (const session of chronologicalFinishedSessions(league)) {
-    playSession(session, elo)
-    if (session.playerIds.includes(playerId)) history.push(rating(playerId))
+    pasoJornada(m, session, sinDecay)
+    if (m.vistos.has(playerId)) history.push(m.elo.get(playerId) ?? ELO_BASE)
   }
   return history
 }

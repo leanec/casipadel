@@ -22,7 +22,7 @@
 5. **Cierre y campeones** — al completar los 6 partidos se corona a la pareja campeona (empate total de criterios ⇒ co-campeones), con celebración y resumen compartible.
 
 ### Temporada
-- **Ranking ELO** — base 1000, K=32, se recalcula siempre desde el historial (nunca se guarda un ELO viejo): partidos, títulos, rachas, movimiento vs. la jornada anterior, sparkline de evolución, forma y mejor dupla.
+- **Ranking ELO** — base 1000, K=32, se recalcula siempre desde el historial (nunca se guarda un ELO viejo): partidos, títulos, rachas, movimiento vs. la jornada anterior, sparkline de evolución, forma y mejor dupla. Decae por inactividad: desde la 3ª ausencia seguida, −10 pts por lunes ausente hasta el piso de 1000 (invitados y sin debutar exentos).
 - **Casi Rangos** — cinco franjas de ELO con humor de la casa (🐣 Casi Principiante → 👑 Casi Leyenda), visibles en la tabla y en el perfil, con barra de progreso hacia el próximo rango.
 - **Cara a cara 🆚** — el historial entre dos jugadores: de rivales (marcador grande) y de dupla.
 - **El puntero 👟 vs el fantasma 👻** — rachas de asistencia: quién viene desde más lunes seguidos y quién acumula ausencias (el fantasma aparece desde dos lunes seguidos sin venir).

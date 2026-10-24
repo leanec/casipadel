@@ -3,6 +3,7 @@ import { chronologicalFinishedSessions, eloPeaks } from './elo'
 import { playerBadges } from './badges'
 import { bestDupla, chemistryOf } from './awards'
 import { seasonStats } from './stats'
+import { venganzasCumplidas } from './venganzas'
 
 /**
  * El Museo 🏛️: los récords históricos de la liga, derivados del historial como
@@ -100,6 +101,22 @@ export function recordsMuseo(league: League): MuseoRecord[] {
       titulo: 'La escoba de oro',
       playerIds: [escoba.id],
       valor: `${n} ${n === 1 ? 'barrida' : 'barridas'}`,
+    })
+  }
+
+  // 🔪 la venganza más épica: la racha más larga que alguien se animó a cortar
+  const vencidas = new Map<string, number>()
+  for (const c of venganzasCumplidas(league)) {
+    vencidas.set(c.victimaId, Math.max(vencidas.get(c.victimaId) ?? 0, c.rachaVencida))
+  }
+  const vengador = top(id => vencidas.get(id) ?? 0)
+  if (vengador !== undefined && (vencidas.get(vengador.id) ?? 0) >= 3) {
+    records.push({
+      id: 'venganza',
+      emoji: '🔪',
+      titulo: 'La venganza más épica',
+      playerIds: [vengador.id],
+      valor: `cortó una racha de ${vencidas.get(vengador.id)}`,
     })
   }
 

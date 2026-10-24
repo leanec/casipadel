@@ -11,6 +11,7 @@ export default function MatchCard({
   teamB,
   players,
   readOnly = false,
+  venganza = false,
   onOpen,
 }: {
   match: Match
@@ -18,6 +19,8 @@ export default function MatchCard({
   teamB: Team
   players: Map<string, Player>
   readOnly?: boolean
+  /** 🔪 El cruce tiene una revancha pendiente entre los jugadores */
+  venganza?: boolean
   onOpen?: () => void
 }) {
   const hexA = TEAM_HEX[teamA.color]
@@ -43,6 +46,11 @@ export default function MatchCard({
             R{match.round}
           </span>
           <CourtBadge court={match.court} />
+          {venganza && (
+            <span aria-label="Revancha pendiente" title="Revancha pendiente">
+              🔪
+            </span>
+          )}
         </div>
         {result !== undefined ? (
           <span className="flex items-center gap-1.5">

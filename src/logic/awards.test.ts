@@ -184,6 +184,29 @@ describe('seasonAwards', () => {
     expect(byId.get('remontador')!.detail).toContain('1 remontada')
   })
 
+  it('El Cobrador para quien cobró más venganzas', () => {
+    // s1: (pa,pb) barre a (pc,pd) dos veces ⇒ deudas. s2: (pc,pd) las cobra todas.
+    function doble(id: string, date: string, ganador: 'A' | 'B'): Session {
+      return {
+        id,
+        date,
+        playerIds: ['pa', 'pb', 'pc', 'pd'],
+        teams: [team('A', 'pa', 'pb'), team('B', 'pc', 'pd')],
+        matches: [
+          match(`${id}-1`, 'A', 'B', 1, { winner: ganador }),
+          match(`${id}-2`, 'A', 'B', 2, { winner: ganador }),
+        ],
+        status: 'finished',
+        championTeamIds: [ganador === 'A' ? 'A' : 'B'],
+      }
+    }
+    const l = league([doble('s1', '2026-09-14', 'A'), doble('s2', '2026-09-21', 'B')])
+    const byId = new Map(seasonAwards(l).map(a => [a.id, a]))
+    // pc y pd cobraron 2 cada uno: gana el id menor (determinístico)
+    expect(byId.get('cobrador')!.playerIds).toEqual(['pc'])
+    expect(byId.get('cobrador')!.detail).toBe('2 venganzas cobradas')
+  })
+
   it('los invitados no ganan premios ni ensucian las duplas', () => {
     const l = league([fullSession('s1', '2026-09-14')])
     // pg es invitado: la dupla D (pg,ph) era la peor, pero con un invitado adentro no cuenta

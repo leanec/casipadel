@@ -90,6 +90,46 @@ describe('recordsMuseo', () => {
     expect(byId.get('remontadas')!.valor).toBe('1 remontada')
   })
 
+  it('la venganza más épica: cortar una racha de 3', () => {
+    // (pa,pb) gana tres lunes seguidos y (pc,pd) cobra en el cuarto
+    function cruce(id: string, date: string, ganador: 'A' | 'B'): Session {
+      return {
+        id,
+        date,
+        playerIds: ['pa', 'pb', 'pc', 'pd'],
+        teams: [team('A', 'pa', 'pb'), team('B', 'pc', 'pd')],
+        matches: [match(`${id}-1`, 'A', 'B', 1, { winner: ganador })],
+        status: 'finished',
+        championTeamIds: [ganador === 'A' ? 'A' : 'B'],
+      }
+    }
+    const l = league([
+      cruce('s1', '2026-09-14', 'A'),
+      cruce('s2', '2026-09-21', 'A'),
+      cruce('s3', '2026-09-28', 'A'),
+      cruce('s4', '2026-10-05', 'B'),
+    ])
+    const byId = new Map(recordsMuseo(l).map(r => [r.id, r]))
+    expect(byId.get('venganza')!.playerIds).toEqual(['pc'])
+    expect(byId.get('venganza')!.valor).toBe('cortó una racha de 3')
+  })
+
+  it('venganzas cortando rachas de 2 no llegan al museo (épica = 3+)', () => {
+    function cruce(id: string, date: string, ganador: 'A' | 'B'): Session {
+      return {
+        id,
+        date,
+        playerIds: ['pa', 'pb', 'pc', 'pd'],
+        teams: [team('A', 'pa', 'pb'), team('B', 'pc', 'pd')],
+        matches: [match(`${id}-1`, 'A', 'B', 1, { winner: ganador })],
+        status: 'finished',
+        championTeamIds: [ganador === 'A' ? 'A' : 'B'],
+      }
+    }
+    const l = league([cruce('s1', '2026-09-14', 'A'), cruce('s2', '2026-09-21', 'B')])
+    expect(recordsMuseo(l).some(r => r.id === 'venganza')).toBe(false)
+  })
+
   it('los invitados no sacan récord (pero su ELO de paso no ensucia el resto)', () => {
     const l = league([fullSession('s1', '2026-09-14'), fullSession('s2', '2026-09-21')])
     l.players = l.players.map(p => (p.id === 'pa' ? { ...p, invitado: true } : p))

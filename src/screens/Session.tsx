@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useLeague } from '../data/store'
-import { getSession, playerMap } from '../logic/selectors'
+import { getSession, playerMap, playerOf } from '../logic/selectors'
 import { formatShortDate } from '../logic/dates'
+import { venganzasCumplidasEn, venganzasEnJuego } from '../logic/venganzas'
 import BigButton from '../components/BigButton'
 import MatchCard from '../components/MatchCard'
 import ResultSheet from '../components/ResultSheet'
@@ -20,9 +21,36 @@ export default function Session() {
   const [confirmReopen, setConfirmReopen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  // 🔪 el sorteo de hoy: qué partidos arrastran revancha, y cuáles ya se saldaron
+  const finished = session?.status === 'finished'
+  const partidosConDeuda = useMemo(
+    () =>
+      new Set(
+        (finished || session === undefined ? [] : venganzasEnJuego(league, session)).map(
+          e => e.matchId,
+        ),
+      ),
+    [league, session, finished],
+  )
+  const saldadas = useMemo(() => {
+    if (session === undefined) return []
+    const porPartido = new Map<
+      string,
+      { victimas: Set<string>; dominadores: Set<string>; racha: number }
+    >()
+    for (const c of venganzasCumplidasEn(league, session)) {
+      const e =
+        porPartido.get(c.matchId) ?? { victimas: new Set<string>(), dominadores: new Set<string>(), racha: 0 }
+      e.victimas.add(c.victimaId)
+      e.dominadores.add(c.dominadorId)
+      e.racha = Math.max(e.racha, c.rachaVencida)
+      porPartido.set(c.matchId, e)
+    }
+    return [...porPartido.entries()]
+  }, [league, session])
+
   if (session === undefined) return <Navigate to="/" replace />
 
-  const finished = session.status === 'finished'
   const played = session.matches.filter(m => m.result !== undefined).length
   const teamById = new Map(session.teams.map(t => [t.id, t]))
   const openMatch = session.matches.find(m => m.id === openMatchId) ?? null
@@ -100,6 +128,7 @@ export default function Session() {
                     teamB={teamB}
                     players={players}
                     readOnly={finished}
+                    venganza={partidosConDeuda.has(m.id)}
                     onOpen={() => setOpenMatchId(m.id)}
                   />
                 )
@@ -107,6 +136,24 @@ export default function Session() {
           </div>
         </section>
       ))}
+
+      {saldadas.length > 0 && (
+        <div className="glass mt-6 rounded-3xl border-lime/40 p-4">
+          <p className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-mute">
+            🔪 Venganza cumplida
+          </p>
+          {saldadas.map(([matchId, e]) => {
+            const victimas = [...e.victimas].map(id => playerOf(players, id).name).join(' & ')
+            const dominadores = [...e.dominadores].map(id => playerOf(players, id).name).join(' & ')
+            return (
+              <p key={matchId} className="mt-2 text-center text-sm font-semibold">
+                {victimas} {e.victimas.size > 1 ? 'cortaron' : 'cortó'} una racha de {e.racha}{' '}
+                contra {dominadores}
+              </p>
+            )
+          })}
+        </div>
+      )}
 
       <section className="mt-8">
         <div className="flex items-center justify-between gap-3">

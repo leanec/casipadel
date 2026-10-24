@@ -27,6 +27,11 @@ const PREMIOS = [
   },
   { emoji: '🧹', nombre: 'La escoba', texto: 'Barrer una jornada: ganar los 3 partidos del mismo lunes.' },
   {
+    emoji: '🔪',
+    nombre: 'El Cobrador',
+    texto: 'Quien más venganzas cobró: ganarle al rival que te venía dominando.',
+  },
+  {
     emoji: '💪',
     nombre: 'Más wins',
     texto: 'El mejor porcentaje de victorias entre los que jugaron 6 partidos o más.',
@@ -47,6 +52,7 @@ const LECTURA = [
     emoji: '🎈',
     texto: 'Invitado: juega y mueve el ELO de los que lo enfrentan, pero no rankea ni gana premios.',
   },
+  { emoji: '🔪', texto: 'Cruce con revancha pendiente: alguno de los cuatro le debe una venganza.' },
 ]
 
 function Seccion({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -135,7 +141,23 @@ export default function HowTo() {
         </div>
       </Seccion>
 
-      <Seccion delay={0.14}>
+      <Seccion delay={0.12}>
+        <p className="label">Las venganzas 🔪</p>
+        <div className="glass rounded-3xl p-4">
+          <p className="text-sm leading-relaxed">
+            Si un rival te ganó los <b className="text-lime">últimos 2 cruces</b> seguidos, le
+            debés una <b>revancha</b> (y él te la puede cobrar cuando vuelvan a cruzarse). Los
+            partidos del lunes con deuda aparecen marcados con 🔪 y, si gana el que venía
+            perdiendo, la app lo canta: <b>venganza cumplida</b>.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-mute">
+            Solo cuenta jugando cruzados como rivales: como dupla no hay venganza. Y como todo
+            acá, se recalcula solo con los resultados.
+          </p>
+        </div>
+      </Seccion>
+
+      <Seccion delay={0.16}>
         <p className="label">Los premios de temporada</p>
         <div className="flex flex-col gap-2">
           {PREMIOS.map(p => (
@@ -154,7 +176,7 @@ export default function HowTo() {
         </div>
       </Seccion>
 
-      <Seccion delay={0.18}>
+      <Seccion delay={0.2}>
         <p className="label">La vitrina</p>
         <div className="glass rounded-3xl p-4">
           <p className="text-xs leading-relaxed">
@@ -165,7 +187,7 @@ export default function HowTo() {
         </div>
       </Seccion>
 
-      <Seccion delay={0.22}>
+      <Seccion delay={0.24}>
         <div className="glass mt-6 rounded-3xl p-4 text-center">
           <p className="text-xs leading-relaxed text-mute">
             Nada de esto se anota a mano: el ranking, los rangos y los premios se recalculan

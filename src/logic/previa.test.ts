@@ -114,6 +114,23 @@ describe('buildPrevia', () => {
     expect(m.lineas.some(l => l.emoji === '👻')).toBe(false)
   })
 
+  it('con deuda viva aparece la línea de la revancha', () => {
+    // en ligaBase Fede y Nico barrieron tres lunes: todos les deben la revancha
+    const m = buildPrevia(ligaBase(), new Date(2026, 9, 17))
+    expect(
+      m.lineas.some(l => l.emoji === '🔪' && l.texto.includes('le debe la revancha a')),
+    ).toBe(true)
+  })
+
+  it('si el sorteo de hoy cruza a los deudores, la revancha se puede cobrar', () => {
+    const l = ligaBase()
+    l.sessions.push(jornada('s4', '2026-10-12', TODOS, Array(6).fill('A') as ('A' | 'B')[], 'live'))
+    const m = buildPrevia(l, new Date(2026, 9, 17))
+    expect(
+      m.lineas.some(l => l.emoji === '🔪' && l.texto.includes('HOY se puede cobrar')),
+    ).toBe(true)
+  })
+
   it('sin temporada no hay líneas pero la previa existe igual', () => {
     const m = buildPrevia(league([]), new Date(2026, 9, 17))
     expect(m.lineas).toEqual([])

@@ -9,6 +9,7 @@ import { playerBadges } from '../logic/badges'
 import { chemistryOf } from '../logic/awards'
 import { eloHistory } from '../logic/elo'
 import { nextRank, rankOf, rankProgress } from '../logic/ranks'
+import { venganzasPendientes } from '../logic/venganzas'
 import Avatar from '../components/Avatar'
 import BigButton from '../components/BigButton'
 import CountUp from '../components/CountUp'
@@ -151,6 +152,9 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
   const next = nextRank(actual)
   const progress = Math.round(rankProgress(actual) * 100)
   const asist = asistenciaDe(league, playerId)
+  const pendientes = venganzasPendientes(league)
+  const deudasPropias = pendientes.filter(d => d.victimaId === playerId).slice(0, 2)
+  const deudasACobrar = pendientes.filter(d => d.dominadorId === playerId).slice(0, 2)
 
   const vitrina: { emoji: string; text: string }[] = []
   if (badges.remontadas > 0) vitrina.push({ emoji: '🔄', text: `×${badges.remontadas} Remontada${badges.remontadas > 1 ? 's' : ''}` })
@@ -224,6 +228,20 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
         </p>
       )}
 
+      {(deudasPropias.length > 0 || deudasACobrar.length > 0) && (
+        <p className="mt-3 text-center text-xs font-semibold text-danger">
+          🔪{' '}
+          {[
+            ...deudasPropias.map(
+              d => `le debe una a ${playerOf(players, d.dominadorId).name} (${d.racha})`,
+            ),
+            ...deudasACobrar.map(
+              d => `${playerOf(players, d.victimaId).name} le debe una (${d.racha})`,
+            ),
+          ].join(' · ')}
+        </p>
+      )}
+
       {vitrina.length > 0 ? (
         <>
           <p className="label">Vitrina</p>
@@ -287,6 +305,7 @@ export default function Ranking() {
   const guests = useMemo(() => guestRows(league), [league])
   const quimica = useMemo(() => chemistryOf(league), [league])
   const asist = useMemo(() => estadoAsistencia(league), [league])
+  const deudas = useMemo(() => venganzasPendientes(league), [league])
   const nombresDe = (ids: string[]) => ids.map(id => playerOf(players, id).name).join(', ')
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
   const [perfilId, setPerfilId] = useState<string | null>(null)
@@ -434,6 +453,25 @@ export default function Ranking() {
               <p className="tnum font-display text-lg text-danger">
                 {Math.round(quimica.winPct * 100)}%
               </p>
+            </div>
+          )}
+
+          {deudas.length > 0 && (
+            <div className="glass mt-4 rounded-2xl p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
+                🔪 Revanchas pendientes
+              </p>
+              <div className="mt-2 flex flex-col gap-2">
+                {deudas.slice(0, 3).map(d => (
+                  <div key={`${d.dominadorId}|${d.victimaId}`} className="flex items-center gap-3">
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold">
+                      {playerOf(players, d.victimaId).name} le debe una a{' '}
+                      {playerOf(players, d.dominadorId).name}
+                    </p>
+                    <p className="tnum shrink-0 font-display text-lg text-danger">{d.racha}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

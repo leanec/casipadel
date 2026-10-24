@@ -3,6 +3,7 @@ import { chronologicalFinishedSessions } from './elo'
 import { playerBadges } from './badges'
 import { pairKey } from './draw'
 import { MIN_DUPLA, rankingRows, seasonStats } from './stats'
+import { venganzasCumplidas } from './venganzas'
 
 /**
  * Premios de temporada: derivados del historial (vista viva, nada persistido).
@@ -204,6 +205,26 @@ export function seasonAwards(league: League): Award[] {
       title: 'La escoba',
       playerIds: [escoba.item.id],
       detail: `${escoba.value} barrida${escoba.value > 1 ? 's' : ''} del día`,
+    })
+  }
+
+  // 🔪 El Cobrador: más venganzas cumplidas (ganarle al que te venía dominando)
+  const cobradas = new Map<string, number>()
+  for (const c of venganzasCumplidas(league)) {
+    cobradas.set(c.victimaId, (cobradas.get(c.victimaId) ?? 0) + 1)
+  }
+  const conCobradas = titulares.filter(p => (cobradas.get(p.id) ?? 0) > 0)
+  const cobrador = best(
+    conCobradas.map(p => ({ item: p, value: cobradas.get(p.id)!, tie: stats(p.id).played, key: p.id })),
+  )
+  if (cobrador !== undefined) {
+    const n = cobradas.get(cobrador.item.id)!
+    awards.push({
+      id: 'cobrador',
+      emoji: '🔪',
+      title: 'El Cobrador',
+      playerIds: [cobrador.item.id],
+      detail: `${n} venganza${n > 1 ? 's' : ''} cobrada${n > 1 ? 's' : ''}`,
     })
   }
 

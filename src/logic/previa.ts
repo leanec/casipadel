@@ -5,6 +5,7 @@ import { activeSession } from './selectors'
 import { estadoAsistencia } from './asistencia'
 import { bestDupla, chemistryOf } from './awards'
 import { rankingRows, seasonStats } from './stats'
+import { venganzasEnJuego, venganzasPendientes } from './venganzas'
 import type { Session } from '../data/types'
 
 /**
@@ -67,6 +68,25 @@ export function buildPrevia(league: League, now: Date = new Date()): PreviaModel
     lineas.push({
       emoji: '🔥',
       texto: `${conRacha.p.name}: ${conRacha.streak} victorias seguidas`,
+    })
+  }
+
+  // 🔪 la revancha pendiente (y si el sorteo de hoy la cruza, mejor aún)
+  const pendientes = venganzasPendientes(league)
+  const cruzadas = live !== undefined ? venganzasEnJuego(league, live).flatMap(e => e.deudas) : []
+  const deuda =
+    cruzadas.length > 0
+      ? cruzadas.reduce((a, b) => (b.racha > a.racha ? b : a))
+      : pendientes[0]
+  if (deuda !== undefined) {
+    const dominador = players(deuda.dominadorId)?.name ?? '¿?'
+    const victima = players(deuda.victimaId)?.name ?? '¿?'
+    lineas.push({
+      emoji: '🔪',
+      texto:
+        cruzadas.length > 0
+          ? `HOY se puede cobrar: ${victima} le debe una a ${dominador}`
+          : `${victima} le debe la revancha a ${dominador}`,
     })
   }
 

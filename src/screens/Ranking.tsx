@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useLeague } from '../data/store'
@@ -279,11 +279,14 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
 export default function Ranking() {
   const { league } = useLeague()
   const navigate = useNavigate()
-  const players = playerMap(league)
-  const rows = rankingRows(league)
-  const guests = guestRows(league)
-  const quimica = chemistryOf(league)
-  const asist = estadoAsistencia(league)
+  // El store reemplaza `league` solo cuando cambia la data, así que estos
+  // cálculos (computeElo ×3 + duplas + asistencia) no se recalculan en
+  // renders que no tocan la liga (abrir perfil/H2H, estado de sync…).
+  const players = useMemo(() => playerMap(league), [league])
+  const rows = useMemo(() => rankingRows(league), [league])
+  const guests = useMemo(() => guestRows(league), [league])
+  const quimica = useMemo(() => chemistryOf(league), [league])
+  const asist = useMemo(() => estadoAsistencia(league), [league])
   const nombresDe = (ids: string[]) => ids.map(id => playerOf(players, id).name).join(', ')
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
   const [perfilId, setPerfilId] = useState<string | null>(null)

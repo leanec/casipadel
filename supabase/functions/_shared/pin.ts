@@ -3,6 +3,8 @@
 export const LEAGUE_NAME = 'casi-padel'
 
 const PBKDF2_ITERACIONES = 100_000
+// Política del rate limit (la aplica el SQL de 04-pin-attempts.sql):
+// 5 fallos en una ventana de 10 min ⇒ bloqueo de 10 min; acertar limpia.
 const MAX_FALLOS = 5
 const BLOQUEO_MS = 10 * 60_000
 
@@ -33,33 +35,50 @@ export function preflight(req: Request): Response {
   return new Response(null, { status: 204, headers: corsHeaders(req) })
 }
 
-// --- rate limit por IP (memoria del isolate; ver PLAN-FASE-2 §14) ---
-const fallos = new Map<string, { n: number; bloqueadoHasta: number }>()
-
-export function ipDe(req: Request): string {
-  const xff = req.headers.get('x-forwarded-for')
-  return xff?.split(',')[0]?.trim() ?? 'sin-ip'
+// --- rate limit del PIN: contador en la base (pin_attempts + RPCs atómicas
+// de 04-pin-attempts.sql). Es POR LIGA y persiste entre isolates y cold
+// starts: rotar IPs ya no esquiva el límite. Antes era un Map en memoria
+// del isolate que se reseteaba con cada cold start (ver PLAN-FASE-2 §14).
+// Si la RPC falla (p. ej. tabla sin crear), falla ABIERTO y deja log:
+// la disponibilidad del grupo manda y un cableado roto se detecta en la
+// verificación e2e, no castigando a los jugadores con errores. ---
+async function rpcPin(nombre: string, liga: string): Promise<Response> {
+  return fetch(`${supabaseUrl()}/rest/v1/rpc/${nombre}`, {
+    method: 'POST',
+    headers: { ...dbHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_liga: liga }),
+  })
 }
 
-/** ms restantes de bloqueo; 0 si puede intentar */
-export function bloqueoRestante(ip: string): number {
-  const f = fallos.get(ip)
-  if (f === undefined || f.bloqueadoHasta <= Date.now()) return 0
-  return f.bloqueadoHasta - Date.now()
-}
-
-export function registrarFallo(ip: string): void {
-  const f = fallos.get(ip) ?? { n: 0, bloqueadoHasta: 0 }
-  f.n += 1
-  if (f.n >= MAX_FALLOS) {
-    f.bloqueadoHasta = Date.now() + BLOQUEO_MS
-    f.n = 0
+/** ms de bloqueo restantes; 0 si puede intentar */
+export async function bloqueoRestanteMs(liga: string): Promise<number> {
+  try {
+    const res = await rpcPin('pin_precheck', liga)
+    if (!res.ok) throw new Error(`pin_precheck ${res.status}`)
+    const segs = (await res.json()) as number | null
+    return segs !== null && segs > 0 ? segs * 1000 : 0
+  } catch (e) {
+    console.error('rate limit precheck', e)
+    return 0
   }
-  fallos.set(ip, f)
 }
 
-export function limpiarFallos(ip: string): void {
-  fallos.delete(ip)
+export async function registrarFallo(liga: string): Promise<void> {
+  try {
+    const res = await rpcPin('pin_fail', liga)
+    if (!res.ok) console.error(`pin_fail ${res.status}`)
+  } catch (e) {
+    console.error('rate limit fail', e)
+  }
+}
+
+export async function limpiarFallos(liga: string): Promise<void> {
+  try {
+    const res = await rpcPin('pin_ok', liga)
+    if (!res.ok) console.error(`pin_ok ${res.status}`)
+  } catch (e) {
+    console.error('rate limit ok', e)
+  }
 }
 
 // --- PIN: PBKDF2-SHA256, comparación en tiempo constante ---

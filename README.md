@@ -108,7 +108,7 @@ El primer dispositivo que entre con el PIN puede **subir su liga local** (migrac
 ## Seguridad
 
 - El PIN nunca viaja ni se guarda en el repo: se verifica en las edge functions contra un **hash PBKDF2 (100k iteraciones)** que vive solo en la base de datos.
-- Rate limit en memoria: 5 intentos fallidos cada 10 minutos por IP.
+- Rate limit del PIN **persistente en la base** (tabla `pin_attempts` + RPCs atómicas): 5 intentos fallidos en una ventana de 10 min **por liga** ⇒ bloqueo de 10 min. Sobrevive cold starts, se comparte entre isolates y acertar el PIN limpia el contador — rotar IPs no esquiva el límite.
 - CORS acotado a `leanec.github.io` y `localhost`.
 - La `anon key` es pública por diseño; escribir exige conocer el PIN y la revisión actual.
 

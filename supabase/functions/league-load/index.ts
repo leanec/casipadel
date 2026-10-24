@@ -1,8 +1,7 @@
 // POST { pin } ⇒ 200 { data, revision } | 401 | 429 | 404 | 500
 import {
-  bloqueoRestante,
+  bloqueoRestanteMs,
   dbHeaders,
-  ipDe,
   json,
   LEAGUE_NAME,
   limpiarFallos,
@@ -17,8 +16,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return preflight(req)
   if (req.method !== 'POST') return json(req, { error: 'metodo' }, 405)
 
-  const ip = ipDe(req)
-  const bloqueo = bloqueoRestante(ip)
+  const bloqueo = await bloqueoRestanteMs(LEAGUE_NAME)
   if (bloqueo > 0) {
     return json(req, { error: 'rate', reintentarEnMs: bloqueo }, 429)
   }
@@ -43,10 +41,10 @@ Deno.serve(async (req: Request) => {
     if (row === undefined) return json(req, { error: 'sin-liga' }, 404)
 
     if (!(await pinCorrecto(pin, row.pin_hash))) {
-      registrarFallo(ip)
+      await registrarFallo(LEAGUE_NAME)
       return json(req, { error: 'pin' }, 401)
     }
-    limpiarFallos(ip)
+    await limpiarFallos(LEAGUE_NAME)
     return json(req, { data: row.data, revision: row.revision }, 200)
   } catch {
     return json(req, { error: 'interno' }, 500)

@@ -45,4 +45,24 @@ describe('App', () => {
     // la marca de edición es la que evita que la fusión revierta el nombre
     expect(stored.players[0].updatedAt).toBeTruthy()
   })
+
+  it('las pantallas diferidas (lazy) cargan y renderizan su ruta', async () => {
+    window.localStorage.setItem(
+      'casi-padel:v1',
+      JSON.stringify({
+        version: 1,
+        players: [{ id: 'p1', name: 'Fede', emoji: '🦈', hue: 200, createdAt: '' }],
+        sessions: [],
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/museo']}>
+        <LeagueProvider>
+          <App />
+        </LeagueProvider>
+      </MemoryRouter>,
+    )
+    // Museo es un chunk aparte: findBy espera a que el import diferido resuelva
+    expect(await screen.findByText('El Museo')).toBeInTheDocument()
+  })
 })

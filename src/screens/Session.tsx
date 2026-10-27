@@ -18,6 +18,7 @@ export default function Session() {
   const session = getSession(league, id)
   const players = useMemo(() => playerMap(league), [league])
   const [openMatchId, setOpenMatchId] = useState<string | null>(null)
+  const [confirmClose, setConfirmClose] = useState(false)
   const [confirmReopen, setConfirmReopen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -54,6 +55,10 @@ export default function Session() {
   const played = session.matches.filter(m => m.result !== undefined).length
   const teamById = new Map(session.teams.map(t => [t.id, t]))
   const openMatch = session.matches.find(m => m.id === openMatchId) ?? null
+  const closeAndCelebrate = () => {
+    actions.finishSession(session.id)
+    navigate(`/session/${session.id}/champion`)
+  }
 
   return (
     <div>
@@ -175,15 +180,36 @@ export default function Session() {
           <p className="font-display text-xl uppercase">Jornada completa 🎉</p>
           <p className="mt-1 text-xs text-mute">Cerrala y coroná a los campeones</p>
           <div className="mt-4">
-            <BigButton
-              onClick={() => {
-                actions.finishSession(session.id)
-                navigate(`/session/${session.id}/champion`)
-              }}
-            >
-              🏆 Cerrar y coronar
-            </BigButton>
+            <BigButton onClick={closeAndCelebrate}>🏆 Cerrar y coronar</BigButton>
           </div>
+        </div>
+      )}
+
+      {!finished && played > 0 && played < 6 && (
+        <div className="glass mt-8 rounded-3xl p-5 text-center">
+          <p className="font-display text-xl uppercase">Jornada incompleta</p>
+          <p className="mt-1 text-xs text-mute">
+            Van {played} de 6: los que falten quedan sin jugar y no cuentan para la tabla ni el
+            ranking.
+          </p>
+          {confirmClose ? (
+            <div className="mt-4 flex gap-3">
+              <BigButton variant="ghost" onClick={() => setConfirmClose(false)}>
+                Seguir jugando
+              </BigButton>
+              <button
+                type="button"
+                onClick={closeAndCelebrate}
+                className="font-display flex-1 rounded-full border border-danger/40 text-sm uppercase tracking-wide text-danger"
+              >
+                Cerrar con {played}/6
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <BigButton onClick={() => setConfirmClose(true)}>🏆 Cerrar y coronar</BigButton>
+            </div>
+          )}
         </div>
       )}
 

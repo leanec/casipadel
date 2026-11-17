@@ -107,4 +107,19 @@ describe('estadoAsistencia', () => {
     expect(e.punteros).toEqual([])
     expect(e.fantasmas).toEqual([])
   })
+
+  it('los invitados no son fantasmas: jugaron una vez y se fueron', () => {
+    const l = ligaBase()
+    // 🎈 el invitado vino solo a la primera y nunca más volvió: -3, peor que
+    // el -2 de p4. Sería EL fantasma, pero los invitados quedan fuera
+    const invitado: Player = { id: 'g1', name: 'G1', emoji: '🎈', hue: 200, createdAt: '', invitado: true }
+    l.players.push(invitado)
+    l.sessions[0].playerIds.push('g1')
+    l.sessions[1].playerIds.push('p4') // p4 sube a -2 para que el invitado "gane"
+    const e = estadoAsistencia(l)
+    expect(asistenciaDe(l, 'g1')).toBe(-3)
+    expect(asistenciaDe(l, 'p4')).toBe(-2)
+    expect(e.fantasmas).toEqual(['p4'])
+    expect(e.ausencias).toBe(2)
+  })
 })

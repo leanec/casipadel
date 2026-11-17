@@ -40,6 +40,9 @@ export function estadoAsistencia(league: League): EstadoAsistencia {
   const peores: string[] = []
   let maxAusencias = 0
   for (const p of league.players) {
+    // 🎈 los invitados juegan una vez y se van: son fantasmas de nacimiento,
+    // así que quedan fuera de la lista (el fantasma es para los del grupo)
+    if (p.invitado) continue
     const racha = asistenciaDe(league, p.id)
     if (racha > 0) {
       if (racha > maxRacha) {

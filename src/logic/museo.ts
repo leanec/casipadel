@@ -3,6 +3,7 @@ import { chronologicalFinishedSessions, eloPeaks } from './elo'
 import { playerBadges } from './badges'
 import { bestDupla, chemistryOf } from './awards'
 import { seasonStats } from './stats'
+import { RIVALIDAD_MIN, rivalidades } from './rivalidades'
 import { venganzasCumplidas } from './venganzas'
 
 /**
@@ -104,19 +105,24 @@ export function recordsMuseo(league: League): MuseoRecord[] {
     })
   }
 
-  // 🔪 la venganza más épica: la racha más larga que alguien se animó a cortar
-  const vencidas = new Map<string, number>()
+  // 🔪 la venganza más épica: la deuda más grande que alguien se animó a cobrar
+  const vencidas = new Map<string, { racha: number; dominadorId: string }>()
   for (const c of venganzasCumplidas(league)) {
-    vencidas.set(c.victimaId, Math.max(vencidas.get(c.victimaId) ?? 0, c.rachaVencida))
+    const previa = vencidas.get(c.victimaId)
+    if (previa === undefined || c.rachaVencida > previa.racha) {
+      vencidas.set(c.victimaId, { racha: c.rachaVencida, dominadorId: c.dominadorId })
+    }
   }
-  const vengador = top(id => vencidas.get(id) ?? 0)
-  if (vengador !== undefined && (vencidas.get(vengador.id) ?? 0) >= 3) {
+  const vengador = top(id => vencidas.get(id)?.racha ?? 0)
+  if (vengador !== undefined && (vencidas.get(vengador.id)?.racha ?? 0) >= 3) {
+    const epica = vencidas.get(vengador.id)!
+    const dominador = players.find(p => p.id === epica.dominadorId)?.name ?? '¿?'
     records.push({
       id: 'venganza',
       emoji: '🔪',
       titulo: 'La venganza más épica',
       playerIds: [vengador.id],
-      valor: `cortó una racha de ${vencidas.get(vengador.id)}`,
+      valor: `le cobró ${epica.racha} al hilo a ${dominador}`,
     })
   }
 
@@ -153,6 +159,21 @@ export function recordsMuseo(league: League): MuseoRecord[] {
       titulo: 'Sala de la vergüenza',
       playerIds: [...quimica.ids],
       valor: `${quimica.won} de ${quimica.played} · ${Math.round(quimica.winPct * 100)}%`,
+    })
+  }
+
+  // ⚔️ la rivalidad histórica: la serie que más veces se jugó (otro calibre que
+  // la rivalidad común: RIVALIDAD_MIN + 5 cruces para que el récord pese)
+  const rivales = rivalidades(league)[0]
+  if (rivales !== undefined && rivales.cruzados >= RIVALIDAD_MIN + 5) {
+    const ganadas = rivales.aWon
+    const perdidas = rivales.cruzados - rivales.aWon
+    records.push({
+      id: 'rivalidad',
+      emoji: '⚔️',
+      titulo: 'La rivalidad histórica',
+      playerIds: [rivales.aId, rivales.bId],
+      valor: `${ganadas}-${perdidas} en ${rivales.cruzados} cruces`,
     })
   }
 

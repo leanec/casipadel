@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../data/store'
 import { playerMap, playerOf } from '../logic/selectors'
 import { formatLongDate } from '../logic/dates'
+import CronicaSheet from '../components/CronicaSheet'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import { TEAM_HEX } from '../components/colors'
@@ -12,6 +13,7 @@ export default function History() {
   const navigate = useNavigate()
   const players = playerMap(league)
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [cronicaId, setCronicaId] = useState<string | null>(null)
 
   return (
     <div>
@@ -54,7 +56,21 @@ export default function History() {
                       En curso
                     </span>
                   ) : (
-                    <span className="shrink-0 text-lg">🏆</span>
+                    <>
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation()
+                          setCronicaId(s.id)
+                        }}
+                        aria-label={`La crónica del ${formatLongDate(s.date)}`}
+                        title="La Crónica del Lunes"
+                        className="shrink-0 rounded-full px-1 text-base transition active:scale-95"
+                      >
+                        📰
+                      </button>
+                      <span className="shrink-0 text-lg">🏆</span>
+                    </>
                   )}
                 </div>
                 {!confirming && (
@@ -119,6 +135,10 @@ export default function History() {
           )
         })}
       </div>
+
+      {cronicaId !== null && (
+        <CronicaSheet sessionId={cronicaId} onClose={() => setCronicaId(null)} />
+      )}
     </div>
   )
 }

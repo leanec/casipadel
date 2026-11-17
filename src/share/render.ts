@@ -1,5 +1,6 @@
 import type { DayTableModel, SeasonSummaryModel, SessionSummaryModel } from '../logic/summary'
 import type { PreviaModel } from '../logic/previa'
+import type { CronicaModel } from '../logic/cronica'
 
 /**
  * Motor de dibujo de las imágenes compartibles (canvas 2D puro, sin dependencias).
@@ -453,6 +454,83 @@ export async function drawPrevia(canvas: HTMLCanvasElement, model: PreviaModel):
     ctx.font = `600 30px ${FONT_BODY}`
     ctx.fillStyle = INK
     ctx.fillText(ellipsis(ctx, linea.texto, 800), 150, y + rowH / 2)
+  })
+
+  footer(ctx)
+}
+
+/** Reparte el texto en dos líneas que entren en maxWidth (o una si entra) */
+function wrapDos(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): [string] | [string, string] {
+  if (ctx.measureText(text).width <= maxWidth) return [text]
+  const words = text.split(' ')
+  let linea1 = ''
+  for (let i = 0; i < words.length; i++) {
+    const candidato = linea1 === '' ? words[i] : `${linea1} ${words[i]}`
+    if (linea1 !== '' && ctx.measureText(candidato).width > maxWidth) {
+      return [linea1, ellipsis(ctx, words.slice(i).join(' '), maxWidth)]
+    }
+    linea1 = candidato
+  }
+  return [linea1]
+}
+
+/** La crónica: las líneas del lunes, hermana de la previa sin parejas */
+export async function drawCronica(canvas: HTMLCanvasElement, model: CronicaModel): Promise<void> {
+  await ensureFonts()
+  const ctx = setup(canvas)
+
+  wordmark(ctx, 110)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.font = `800 26px ${FONT_BODY}`
+  tracking(ctx, 5)
+  ctx.fillStyle = MUTE
+  ctx.fillText(model.fechaLabel.toUpperCase(), 540, 168)
+  tracking(ctx, 0)
+
+  ctx.font = `72px ${FONT_DISPLAY}`
+  ctx.save()
+  ctx.shadowColor = 'rgba(198, 244, 50, 0.35)'
+  ctx.shadowBlur = 24
+  ctx.fillStyle = LIME
+  ctx.fillText('LA CRÓNICA', 540, 252)
+  ctx.restore()
+
+  // chip de la jornada (J4)
+  ctx.font = `800 24px ${FONT_BODY}`
+  tracking(ctx, 3)
+  const chipW = ctx.measureText(model.jornadaLabel).width + 76
+  const chipY = 292
+  glassCard(ctx, 540 - chipW / 2, chipY, chipW, 54, 27)
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = MUTE
+  ctx.fillText(model.jornadaLabel, 540, chipY + 28)
+  tracking(ctx, 0)
+
+  const top = 392
+  const rowH = 122
+  const gap = 18
+  model.lineas.forEach((linea, i) => {
+    const y = top + i * (rowH + gap)
+    glassCard(ctx, 60, y, 960, rowH, 22)
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    ctx.font = '44px sans-serif'
+    ctx.fillText(linea.emoji, 92, y + rowH / 2)
+    ctx.font = `600 ${fitFont(ctx, linea.texto, '600', 40, 800, FONT_BODY)}px ${FONT_BODY}`
+    ctx.fillStyle = INK
+    const lineasTexto = wrapDos(ctx, linea.texto, 800)
+    if (lineasTexto.length === 1) {
+      ctx.fillText(lineasTexto[0], 158, y + rowH / 2)
+    } else {
+      ctx.fillText(lineasTexto[0], 158, y + rowH / 2 - 20)
+      ctx.fillText(lineasTexto[1], 158, y + rowH / 2 + 22)
+    }
   })
 
   footer(ctx)

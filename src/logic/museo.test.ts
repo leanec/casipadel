@@ -111,7 +111,35 @@ describe('recordsMuseo', () => {
     ])
     const byId = new Map(recordsMuseo(l).map(r => [r.id, r]))
     expect(byId.get('venganza')!.playerIds).toEqual(['pc'])
-    expect(byId.get('venganza')!.valor).toBe('cortó una racha de 3')
+    expect(byId.get('venganza')!.valor).toBe('le cobró 3 al hilo a PA')
+  })
+
+  it('la rivalidad histórica: la serie más jugada, desde 10 cruces', () => {
+    // 10 jornadas alternando el ganador: todas las series quedan 5-5 en 10 cruces
+    const sesiones = Array.from({ length: 10 }, (_, i) =>
+      fullSession(
+        `s${i + 1}`,
+        new Date(2026, 7, 1 + i * 7).toISOString().slice(0, 10),
+        undefined,
+        i % 2 === 1,
+      ),
+    )
+    const byId = new Map(recordsMuseo(league(sesiones)).map(r => [r.id, r]))
+    expect(byId.get('rivalidad')!.playerIds).toEqual(['pa', 'pc'])
+    expect(byId.get('rivalidad')!.valor).toBe('5-5 en 10 cruces')
+  })
+
+  it('una serie pareja pero corta no llega al récord del museo', () => {
+    const sesiones = Array.from({ length: 6 }, (_, i) =>
+      fullSession(
+        `s${i + 1}`,
+        new Date(2026, 7, 1 + i * 7).toISOString().slice(0, 10),
+        undefined,
+        i % 2 === 1,
+      ),
+    )
+    const byId = new Map(recordsMuseo(league(sesiones)).map(r => [r.id, r]))
+    expect(byId.has('rivalidad')).toBe(false) // 6 cruces < 10
   })
 
   it('venganzas cortando rachas de 2 no llegan al museo (épica = 3+)', () => {

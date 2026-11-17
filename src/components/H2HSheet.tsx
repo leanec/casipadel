@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useLeague } from '../data/store'
 import { headToHead } from '../logic/h2h'
+import { puestoDeRivalidad } from '../logic/rivalidades'
 import { venganzaDe } from '../logic/venganzas'
 import { playerMap, playerOf } from '../logic/selectors'
 import { rankingRows } from '../logic/stats'
@@ -70,6 +71,11 @@ export default function H2HSheet({ onClose }: { onClose: () => void }) {
     () => (aId !== undefined && bId !== undefined ? venganzaDe(league, aId, bId) : undefined),
     [league, aId, bId],
   )
+  const puestoRivalidad = useMemo(
+    () =>
+      aId !== undefined && bId !== undefined ? puestoDeRivalidad(league, aId, bId) : 0,
+    [league, aId, bId],
+  )
 
   if (aId === undefined || bId === undefined) return null
 
@@ -126,10 +132,15 @@ export default function H2HSheet({ onClose }: { onClose: () => void }) {
               <p className="mt-3 text-center text-xs text-mute">
                 {cruces.played} {cruces.played === 1 ? 'cruce' : 'cruces'} como rivales
               </p>
+              {puestoRivalidad > 0 && (
+                <p className="mt-1 text-center text-[10px] font-bold uppercase tracking-wider text-lime">
+                  ⚔️ Rivalidad Nº{puestoRivalidad} de la liga
+                </p>
+              )}
               {deuda !== undefined && (
                 <p className="mt-3 rounded-2xl bg-danger/10 px-3 py-2.5 text-center text-xs leading-relaxed text-danger">
-                  🔪 Revancha pendiente: {playerOf(players, deuda.dominadorId).name} ganó los
-                  últimos {deuda.racha}; {playerOf(players, deuda.victimaId).name} se la debe
+                  🔪 Venganza pendiente: {playerOf(players, deuda.dominadorId).name} le viene
+                  ganando {deuda.racha} al hilo
                 </p>
               )}
             </div>

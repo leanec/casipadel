@@ -9,6 +9,8 @@ import { playerBadges } from '../logic/badges'
 import { chemistryOf } from '../logic/awards'
 import { eloHistory } from '../logic/elo'
 import { nextRank, rankOf, rankProgress } from '../logic/ranks'
+import { rivalidades as rivalidadesDe, nemesisYVictima } from '../logic/rivalidades'
+import { apodosDe } from '../logic/apodos'
 import { venganzasPendientes } from '../logic/venganzas'
 import Avatar from '../components/Avatar'
 import BigButton from '../components/BigButton'
@@ -155,6 +157,12 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
   const pendientes = venganzasPendientes(league)
   const deudasPropias = pendientes.filter(d => d.victimaId === playerId).slice(0, 2)
   const deudasACobrar = pendientes.filter(d => d.dominadorId === playerId).slice(0, 2)
+  const { nemesisId, victimaId } = nemesisYVictima(league, playerId)
+  const nemesis = nemesisId !== undefined ? playerOf(players, nemesisId) : undefined
+  const victima = victimaId !== undefined ? playerOf(players, victimaId) : undefined
+  // el apodo principal va bajo el nombre; los otros cinturones entran a la vitrina
+  const apodos = apodosDe(league).get(playerId) ?? []
+  const apodo = apodos[0]
 
   const vitrina: { emoji: string; text: string }[] = []
   if (badges.remontadas > 0) vitrina.push({ emoji: '🔄', text: `×${badges.remontadas} Remontada${badges.remontadas > 1 ? 's' : ''}` })
@@ -162,6 +170,8 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
   if (badges.bestStreak >= 5) vitrina.push({ emoji: '🌋', text: `Racha ${badges.bestStreak}` })
   else if (badges.bestStreak >= 3) vitrina.push({ emoji: '🔥', text: `Racha ${badges.bestStreak}` })
   if (quimica !== undefined && quimica.ids.includes(playerId)) vitrina.push({ emoji: '🧪', text: 'Química prohibida' })
+  // los cinturones que no son el principal: chips de vitrina
+  for (const a of apodos.slice(1)) vitrina.push({ emoji: a.emoji, text: a.titulo })
 
   return (
     <Sheet title="Perfil" onClose={onClose}>
@@ -169,6 +179,16 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
         <Avatar player={player} size="xl" />
         <div className="min-w-0">
           <p className="font-display truncate text-2xl uppercase leading-none">{player.name}</p>
+          {apodo !== undefined && (
+            <p
+              className={`mt-1 truncate text-xs font-bold uppercase tracking-wider ${
+                apodo.id === 'fantasma' || apodo.id === 'armstrong' ? 'text-danger' : 'text-lime'
+              }`}
+            >
+              📛 {apodo.emoji} {apodo.titulo}
+              {apodo.caption !== '' && <span className="font-semibold text-mute"> · {apodo.caption}</span>}
+            </p>
+          )}
           {player.invitado === true && (
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-mute">
               🎈 Invitado
@@ -233,11 +253,21 @@ function PerfilSheet({ playerId, onClose }: { playerId: string; onClose: () => v
           🔪{' '}
           {[
             ...deudasPropias.map(
-              d => `le debe una a ${playerOf(players, d.dominadorId).name} (${d.racha})`,
+              d => `le debe una a ${playerOf(players, d.dominadorId).name} (${d.racha} al hilo)`,
             ),
             ...deudasACobrar.map(
-              d => `${playerOf(players, d.victimaId).name} le debe una (${d.racha})`,
+              d => `${playerOf(players, d.victimaId).name} le debe una (${d.racha} al hilo)`,
             ),
+          ].join(' · ')}
+        </p>
+      )}
+
+      {(nemesis !== undefined || victima !== undefined) && (
+        <p className="mt-2 text-center text-xs font-semibold text-mute">
+          ⚔️{' '}
+          {[
+            ...(nemesis !== undefined ? [`Tu némesis: ${nemesis.name}`] : []),
+            ...(victima !== undefined ? [`Tu víctima favorita: ${victima.name}`] : []),
           ].join(' · ')}
         </p>
       )}
@@ -306,6 +336,7 @@ export default function Ranking() {
   const quimica = useMemo(() => chemistryOf(league), [league])
   const asist = useMemo(() => estadoAsistencia(league), [league])
   const deudas = useMemo(() => venganzasPendientes(league), [league])
+  const rivalidades = useMemo(() => rivalidadesDe(league), [league])
   const nombresDe = (ids: string[]) => ids.map(id => playerOf(players, id).name).join(', ')
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
   const [perfilId, setPerfilId] = useState<string | null>(null)
@@ -459,7 +490,7 @@ export default function Ranking() {
           {deudas.length > 0 && (
             <div className="glass mt-4 rounded-2xl p-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
-                🔪 Revanchas pendientes
+                🔪 Venganzas pendientes
               </p>
               <div className="mt-2 flex flex-col gap-2">
                 {deudas.slice(0, 3).map(d => (
@@ -472,6 +503,37 @@ export default function Ranking() {
                   </div>
                 ))}
               </div>
+              <p className="mt-2 text-[10px] text-mute">
+                El número: cuántos al hilo viene perdiendo el que debe
+              </p>
+            </div>
+          )}
+
+          {rivalidades.length > 0 && (
+            <div className="glass mt-4 rounded-2xl p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
+                ⚔️ Rivalidades
+              </p>
+              <div className="mt-2 flex flex-col gap-2">
+                {rivalidades.slice(0, 3).map(r => (
+                  <div key={`${r.aId}|${r.bId}`} className="flex items-center gap-3">
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold">
+                      {playerOf(players, r.aId).name} vs {playerOf(players, r.bId).name}
+                      {r.caliente && (
+                        <span className="ml-1.5 text-[10px]" title="La final no oficial">
+                          🔥
+                        </span>
+                      )}
+                    </p>
+                    <p className="tnum shrink-0 font-display text-lg text-lime">
+                      {r.aWon}-{r.cruzados - r.aWon}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-mute">
+                Cruces como rivales; 🔥 = la final no oficial
+              </p>
             </div>
           )}
 

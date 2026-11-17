@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useLeague } from '../data/store'
 import { getSession } from '../logic/selectors'
 import { buildPrevia } from '../logic/previa'
+import { cronicaDeJornada } from '../logic/cronica'
 import { buildDayTable, buildSeasonSummary, buildSessionSummary } from '../logic/summary'
 import {
+  drawCronica,
   drawDayTable,
   drawPrevia,
   drawSeasonSummary,
@@ -13,9 +15,9 @@ import {
 import { shareCanvas } from '../share/share'
 import BigButton from './BigButton'
 
-/** Genera la imagen (día, tabla del día, temporada o previa) en un canvas fuera de
- *  pantalla y la comparte. `compact` renderiza un chip con el icono en vez de
- *  botón grande (para encabezados de sección). */
+/** Genera la imagen (día, tabla del día, temporada, previa o crónica) en un canvas
+ *  fuera de pantalla y la comparte. `compact` renderiza un chip con el icono en vez
+ *  de botón grande (para encabezados de sección). */
 export default function ShareImageButton({
   kind,
   sessionId,
@@ -23,7 +25,7 @@ export default function ShareImageButton({
   variant = 'primary',
   compact = false,
 }: {
-  kind: 'day' | 'table' | 'season' | 'previa'
+  kind: 'day' | 'table' | 'season' | 'previa' | 'cronica'
   sessionId?: string
   label: string
   variant?: 'primary' | 'ghost'
@@ -52,6 +54,13 @@ export default function ShareImageButton({
       } else if (kind === 'previa') {
         await drawPrevia(canvas, buildPrevia(league))
         await shareCanvas(canvas, 'casipadel-previa.png')
+      } else if (kind === 'cronica') {
+        const session = getSession(league, sessionId)
+        if (session === undefined) return
+        const cronica = cronicaDeJornada(league, session.id)
+        if (cronica === undefined) return
+        await drawCronica(canvas, cronica)
+        await shareCanvas(canvas, `casipadel-cronica-${session.date}.png`)
       } else {
         await drawSeasonSummary(canvas, buildSeasonSummary(league))
         await shareCanvas(canvas, 'casipadel-temporada.png')

@@ -114,11 +114,13 @@ describe('buildPrevia', () => {
     expect(m.lineas.some(l => l.emoji === '👻')).toBe(false)
   })
 
-  it('con deuda viva aparece la línea de la revancha', () => {
+  it('con deuda viva aparece la línea de la venganza', () => {
     // en ligaBase Fede y Nico barrieron tres lunes: todos les deben la revancha
     const m = buildPrevia(ligaBase(), new Date(2026, 9, 17))
     expect(
-      m.lineas.some(l => l.emoji === '🔪' && l.texto.includes('le debe la revancha a')),
+      m.lineas.some(
+        l => l.emoji === '🔪' && l.texto.includes('le debe una a') && l.texto.includes('al hilo'),
+      ),
     ).toBe(true)
   })
 
@@ -129,6 +131,27 @@ describe('buildPrevia', () => {
     expect(
       m.lineas.some(l => l.emoji === '🔪' && l.texto.includes('HOY se puede cobrar')),
     ).toBe(true)
+  })
+
+  it('con una serie pareja a muerte aparece la final no oficial ⚔️', () => {
+    // match 1 (T1 vs T2) alterna: Fede-Vale termina 3-2 en 5 cruces ⇒ 🔥
+    const fechas = ['2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12']
+    const winners = (w0: 'A' | 'B') => [w0, 'A', 'A', 'A', 'A', 'A'] as ('A' | 'B')[]
+    const l = league(
+      [0, 1, 2, 3, 4].map(i =>
+        jornada(`s${i + 1}`, fechas[i], TODOS, winners(i % 2 === 0 ? 'A' : 'B')),
+      ),
+    )
+    const m = buildPrevia(l, new Date(2026, 9, 17))
+    const linea = m.lineas.find(l => l.emoji === '⚔️')
+    expect(linea?.texto).toContain('La final no oficial')
+    expect(linea?.texto).toContain('Fede')
+    expect(linea?.texto).toContain('3-2')
+  })
+
+  it('con pocas jornadas todavía no hay rivalidad en la previa', () => {
+    const m = buildPrevia(ligaBase(), new Date(2026, 9, 17)) // 3 cruces por pareja: faltan para las 5
+    expect(m.lineas.some(l => l.emoji === '⚔️')).toBe(false)
   })
 
   it('sin temporada no hay líneas pero la previa existe igual', () => {

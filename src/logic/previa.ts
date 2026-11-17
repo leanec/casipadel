@@ -5,6 +5,8 @@ import { activeSession } from './selectors'
 import { estadoAsistencia } from './asistencia'
 import { bestDupla, chemistryOf } from './awards'
 import { rankingRows, seasonStats } from './stats'
+import { rivalidadTop } from './rivalidades'
+import { cinturonesEnDisputa } from './apodos'
 import { venganzasEnJuego, venganzasPendientes } from './venganzas'
 import type { Session } from '../data/types'
 
@@ -71,7 +73,7 @@ export function buildPrevia(league: League, now: Date = new Date()): PreviaModel
     })
   }
 
-  // 🔪 la revancha pendiente (y si el sorteo de hoy la cruza, mejor aún)
+  // 🔪 la venganza pendiente (y si el sorteo de hoy la cruza, mejor aún)
   const pendientes = venganzasPendientes(league)
   const cruzadas = live !== undefined ? venganzasEnJuego(league, live).flatMap(e => e.deudas) : []
   const deuda =
@@ -85,8 +87,32 @@ export function buildPrevia(league: League, now: Date = new Date()): PreviaModel
       emoji: '🔪',
       texto:
         cruzadas.length > 0
-          ? `HOY se puede cobrar: ${victima} le debe una a ${dominador}`
-          : `${victima} le debe la revancha a ${dominador}`,
+          ? `HOY se puede cobrar: ${victima} le debe una a ${dominador} (${deuda.racha} al hilo)`
+          : `${victima} le debe una a ${dominador} (${deuda.racha} al hilo)`,
+    })
+  }
+
+  // ⚔️ la final no oficial: la rivalidad que va pareja a muerte
+  const rivalidad = rivalidadTop(league)
+  if (rivalidad !== undefined && rivalidad.caliente) {
+    const aWon = rivalidad.aWon
+    const bWon = rivalidad.cruzados - rivalidad.aWon
+    const nombreA = players(rivalidad.aId)?.name ?? '¿?'
+    const nombreB = players(rivalidad.bId)?.name ?? '¿?'
+    lineas.push({
+      emoji: '⚔️',
+      texto: `La final no oficial: ${nombreA} y ${nombreB} van ${aWon}-${bWon}`,
+    })
+  }
+
+  // 📛 el cinturón que cambió de manos el último lunes (el de mayor prestigio)
+  const disputa = cinturonesEnDisputa(league)[0]
+  if (disputa !== undefined) {
+    const nuevo = players(disputa.nuevoId)?.name ?? '¿?'
+    const viejo = players(disputa.viejoId)?.name ?? '¿?'
+    lineas.push({
+      emoji: '📛',
+      texto: `${disputa.cinturon.emoji} ${disputa.cinturon.titulo} cambió de manos: ${nuevo} se lo quitó a ${viejo}`,
     })
   }
 

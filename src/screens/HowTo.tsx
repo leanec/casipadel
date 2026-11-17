@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../data/store'
 import { RANKS } from '../logic/ranks'
+import { cinturones } from '../logic/apodos'
+import { playerMap } from '../logic/selectors'
 import BigButton from '../components/BigButton'
 import PageHeader from '../components/PageHeader'
 import { EASE } from '../components/anim'
@@ -52,7 +54,8 @@ const LECTURA = [
     emoji: '🎈',
     texto: 'Invitado: juega y mueve el ELO de los que lo enfrentan, pero no rankea ni gana premios.',
   },
-  { emoji: '🔪', texto: 'Cruce con revancha pendiente: alguno de los cuatro le debe una venganza.' },
+  { emoji: '🔪', texto: 'Venganza pendiente: alguien de esa cancha le viene debiendo una a su rival.' },
+  { emoji: '⚔️🔥', texto: 'La final no oficial: la rivalidad que está pareja a muerte en cruces.' },
 ]
 
 function Seccion({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -71,6 +74,8 @@ export default function HowTo() {
   const navigate = useNavigate()
   const { league } = useLeague()
   const hayTemporada = league.sessions.some(s => s.status === 'finished')
+  const players = playerMap(league)
+  const belts = cinturones(league)
 
   return (
     <div>
@@ -145,14 +150,80 @@ export default function HowTo() {
         <p className="label">Las venganzas 🔪</p>
         <div className="glass rounded-3xl p-4">
           <p className="text-sm leading-relaxed">
-            Si un rival te ganó los <b className="text-lime">últimos 2 cruces</b> seguidos, le
-            debés una <b>revancha</b> (y él te la puede cobrar cuando vuelvan a cruzarse). Los
-            partidos del lunes con deuda aparecen marcados con 🔪 y, si gana el que venía
-            perdiendo, la app lo canta: <b>venganza cumplida</b>.
+            Si un rival te ganó los <b className="text-lime">últimos 2 cruces</b> al hilo, le
+            quedaste debiendo una <b>revancha</b> — y el lunes que se vuelvan a cruzar, te la
+            puede <b>cobrar</b>. Los partidos con deuda pendiente se marcan con 🔪 y, si gana el
+            que venía perdiendo, la app lo canta: <b>se la cobró</b>.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-mute">
-            Solo cuenta jugando cruzados como rivales: como dupla no hay venganza. Y como todo
-            acá, se recalcula solo con los resultados.
+            La regla: <b>se debe, se cobra, queda saldada</b>. Solo cuenta jugando cruzados como
+            rivales — como dupla no hay venganza. Y como todo acá, se recalcula solo con los
+            resultados.
+          </p>
+        </div>
+      </Seccion>
+
+      <Seccion delay={0.14}>
+        <p className="label">Las rivalidades ⚔️</p>
+        <div className="glass rounded-3xl p-4">
+          <p className="text-sm leading-relaxed">
+            Cada cruce como rivales suma en la <b>serie personal</b>: a la quinta, ya es
+            oficialmente una rivalidad. El Ranking muestra el top 3 y, cuando la serie va
+            empatada, aparece la 🔥 <b>final no oficial</b>: nadie le pudo sacar ventaja
+            definitiva al otro todavía.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-mute">
+            En tu perfil están tu <b>némesis</b> (el que más te pasa por arriba) y tu{' '}
+            <b>víctima favorita</b> (al revés). El cara a cara 🆚 te dice qué número de
+            rivalidad es la del medio.
+          </p>
+        </div>
+      </Seccion>
+
+      <Seccion delay={0.15}>
+        <p className="label">Los cinturones 📛</p>
+        <div className="glass rounded-3xl p-4">
+          <p className="text-sm leading-relaxed">
+            La liga reparte títulos de <b>un solo dueño</b>: El Muro es el que mejor porcentaje
+            tiene, punto. Se defienden cada lunes — y si el lunes pasado alguno cambió de manos,
+            La Previa lo canta.
+          </p>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {belts.map(b => (
+              <div key={b.id} className="flex items-center gap-2.5">
+                <span className="w-6 shrink-0 text-center text-base">{b.emoji}</span>
+                <span className="w-24 shrink-0 text-xs font-bold uppercase tracking-wide">
+                  {b.titulo}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs text-mute">
+                  {b.holderIds.length > 0
+                    ? b.holderIds
+                        .map(id => players.get(id)?.name ?? '¿?')
+                        .join(' y ') + (b.caption !== '' ? ` · ${b.caption}` : '')
+                    : 'vacante'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-mute">
+            El Fantasma 👻 y El Armstrong 📉 son de vergüenza, no de gloria: en el perfil
+            aparecen en rojo. Los invitados 🎈 no llevan cinturones.
+          </p>
+        </div>
+      </Seccion>
+
+      <Seccion delay={0.155}>
+        <p className="label">La Crónica del Lunes 📰</p>
+        <div className="glass rounded-3xl p-4">
+          <p className="text-sm leading-relaxed">
+            Cerrada la jornada, la app redacta la reseña: el campeón, la goleada, el partido del
+            día, la venganza cobrada, la remontada y el salto de ELO. La previa promete;{' '}
+            <b>la crónica cobra</b>. Se comparte como imagen y queda con cada jornada del
+            historial (botón 📰).
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-mute">
+            Es la contracara de La Previa 📣 y se redacta sola con los resultados: si corrigen
+            un marcador, la crónica se corrige sola.
           </p>
         </div>
       </Seccion>

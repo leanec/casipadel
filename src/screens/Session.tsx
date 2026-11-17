@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { getSession, playerMap, playerOf } from '../logic/selectors'
 import { formatShortDate } from '../logic/dates'
+import { cronicaDeJornada } from '../logic/cronica'
 import { venganzasCumplidasEn, venganzasEnJuego } from '../logic/venganzas'
 import BigButton from '../components/BigButton'
 import MatchCard from '../components/MatchCard'
@@ -49,6 +50,11 @@ export default function Session() {
     }
     return [...porPartido.entries()]
   }, [league, session])
+  // 📰 la crónica solo existe para jornadas terminadas
+  const cronica = useMemo(
+    () => (session !== undefined ? cronicaDeJornada(league, session.id) : undefined),
+    [league, session],
+  )
 
   if (session === undefined) return <Navigate to="/" replace />
 
@@ -145,15 +151,15 @@ export default function Session() {
       {saldadas.length > 0 && (
         <div className="glass mt-6 rounded-3xl border-lime/40 p-4">
           <p className="text-center text-[10px] font-bold uppercase tracking-[0.25em] text-mute">
-            🔪 Venganza cumplida
+            🔪 Se la cobró
           </p>
           {saldadas.map(([matchId, e]) => {
             const victimas = [...e.victimas].map(id => playerOf(players, id).name).join(' & ')
             const dominadores = [...e.dominadores].map(id => playerOf(players, id).name).join(' & ')
             return (
               <p key={matchId} className="mt-2 text-center text-sm font-semibold">
-                {victimas} {e.victimas.size > 1 ? 'cortaron' : 'cortó'} una racha de {e.racha}{' '}
-                contra {dominadores}
+                {victimas} {e.victimas.size > 1 ? 'se la cobraron' : 'se la cobró'} a{' '}
+                {dominadores} después de {e.racha} al hilo
               </p>
             )
           })}
@@ -210,6 +216,30 @@ export default function Session() {
               <BigButton onClick={() => setConfirmClose(true)}>🏆 Cerrar y coronar</BigButton>
             </div>
           )}
+        </div>
+      )}
+
+      {finished && cronica !== undefined && cronica.lineas.length > 0 && (
+        <div className="glass mt-6 rounded-3xl p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mute">
+              📰 La crónica · {cronica.jornadaLabel}
+            </p>
+            <ShareImageButton
+              kind="cronica"
+              sessionId={session.id}
+              label="Compartir la crónica"
+              compact
+            />
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            {cronica.lineas.map((l, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <span className="shrink-0 text-base">{l.emoji}</span>
+                <p className="flex-1 text-sm leading-relaxed">{l.texto}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

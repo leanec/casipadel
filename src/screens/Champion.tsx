@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useLeague } from '../data/store'
 import { getSession, playerMap, playerOf } from '../logic/selectors'
+import { cronicaDeJornada } from '../logic/cronica'
 import { isRemontada, sweepTeamIds } from '../logic/badges'
 import BigButton from '../components/BigButton'
 import ShareImageButton from '../components/ShareImageButton'
@@ -16,6 +17,10 @@ export default function Champion() {
   const { league } = useLeague()
   const session = getSession(league, id)
   const players = useMemo(() => playerMap(league), [league])
+  const cronica = useMemo(
+    () => (session !== undefined ? cronicaDeJornada(league, session.id) : undefined),
+    [league, session],
+  )
 
   useEffect(() => {
     if (session?.status === 'finished') celebrate()
@@ -93,6 +98,30 @@ export default function Champion() {
             </span>
           ))}
         </div>
+      )}
+
+      {cronica !== undefined && cronica.lineas.length > 0 && (
+        <section className="mt-8">
+          <h3 className="section-title text-center">
+            📰 La crónica · {cronica.jornadaLabel}
+          </h3>
+          <div className="mt-2 flex flex-col gap-2">
+            {cronica.lineas.map((l, i) => (
+              <div key={i} className="glass flex items-center gap-3 rounded-2xl px-3 py-2.5">
+                <span className="shrink-0 text-lg">{l.emoji}</span>
+                <p className="flex-1 text-sm leading-relaxed">{l.texto}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3">
+            <ShareImageButton
+              kind="cronica"
+              sessionId={session.id}
+              label="📤 Compartir la crónica"
+              variant="ghost"
+            />
+          </div>
+        </section>
       )}
 
       <div className="mt-8 flex flex-col gap-3">
